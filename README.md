@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrendRadar
 
-## Getting Started
+Private E-Commerce Research- und Discovery-Plattform: Trend Spy, Ad Spy, Google Trends, Startup Spy,
+Future Radar, Global Search, Watchlist und Profit-Rechner. Nur für eine Person, ohne öffentliche Registrierung.
 
-First, run the development server:
+Grundregeln im Code: keine erfundenen Zahlen, jede Angabe mit Quelle, Einschätzungen klar als solche markiert,
+keine unzulässigen Scraping-Methoden.
+
+## Stack
+
+- Next.js 16 (App Router), TypeScript, Tailwind CSS 4, lucide-react, Recharts
+- Supabase (Postgres, Auth, Row Level Security)
+- Hosting: Vercel (Hobby). Tägliche Recherche ab Phase 4 per GitHub Actions.
+
+## Einrichtung
+
+1. **Supabase-Projekt anlegen** (Region Europa).
+2. **Schema einspielen:** Inhalt von `supabase/migrations/0001_init.sql` im Supabase SQL Editor ausführen.
+3. **Registrierung abschalten:** Authentication → Sign In / Providers → „Allow new users to sign up“ aus.
+4. **Eigenes Konto anlegen:** Authentication → Users → „Add user“ mit E-Mail und starkem Passwort.
+5. **Konto als Besitzer eintragen** (nur dieses Konto sieht Daten):
+   ```sql
+   insert into app_owner (user_id) select id from auth.users where email = 'deine@adresse.ch';
+   ```
+6. **Umgebungsvariablen** in Vercel (Project → Settings → Environment Variables) bzw. lokal in `.env.local`
+   setzen, siehe `.env.example`.
+7. **Vercel:** Repository importieren, Framework „Next.js“, deployen.
+
+## Lokal entwickeln
 
 ```bash
+npm install
+cp .env.example .env.local   # Werte eintragen
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Prüfen: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Sicherheit
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Login nur für `ALLOWED_EMAIL`, geprüft im Proxy und nochmals serverseitig in jeder geschützten Seite.
+- Row Level Security: Daten nur für das Konto in `app_owner`.
+- API-Keys liegen nur als Server-Umgebungsvariablen bzw. GitHub-Secrets, nie im Browser.
+- Seiten sind mit `noindex` markiert.
 
-## Learn More
+## Struktur
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/(app)/` – geschützte Seiten
+- `src/app/login/` – Login und Logout
+- `src/lib/profit.ts` – Rechenlogik des Profit-Rechners (mit Tests)
+- `src/lib/supabase/` – Supabase-Clients und Sitzungs-Proxy
+- `supabase/migrations/` – Datenbankschema
