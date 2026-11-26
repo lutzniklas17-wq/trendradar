@@ -167,3 +167,14 @@ Prüfen: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 - `src/lib/profit.ts` – Rechenlogik des Profit-Rechners (mit Tests)
 - `src/lib/supabase/` – Supabase-Clients und Sitzungs-Proxy
 - `supabase/migrations/` – Datenbankschema
+
+## Produkte (Top-Hits und Lieferanten-Bibliothek)
+
+Seite `/produkte`. Oben Top-Hits nach Regeln aus echten Daten, darunter die Bibliothek aller gespeicherten Lieferanten-Produkte mit Filtern.
+
+1. Migration `supabase/migrations/0008_product_library.sql` im Supabase SQL Editor ausführen.
+2. Kostenloses Konto bei CJdropshipping eröffnen, API-Key erzeugen und in Vercel als `CJ_API_KEY` eintragen (Anleitung in den Projektdateien: `anleitungen/cj-und-claude-zugang.md`). Optional `CJ_DAILY_LIMIT` (Standard 300).
+3. Täglicher Lauf: Vercel Cron `/api/cron/collect?job=library` (02:30 UTC). Holt die CJ-Trend- und Neuheitenliste und deine Suchbegriffe, sortiert nach Übernahmen durch Shops, und speichert einen Messpunkt pro Tag (daraus entsteht das Wachstum).
+4. Optional KI-Bewertung: `ANTHROPIC_API_KEY` und `AI_MONTHLY_BUDGET_USD` (Standard 5) setzen. Cron `/api/cron/collect?job=ai` (05:30 UTC) bewertet neue Produkte mit Claude Haiku (relevant ja/nein, 1–5, kurze Begründung). Stoppt, sobald das Tagesbudget (Monatsbudget / 30) erreicht ist.
+
+Grenzen: CJ erlaubt 1 Anfrage pro Sekunde und kostenlosen Konten 1000 pro Tag. AliExpress, Alibaba und Temu nur als Links, solange keine offizielle API freigegeben ist. Den ganzen Katalog eines Lieferanten zu kopieren ist weder erlaubt noch möglich; die Bibliothek wächst mit jeder Suche und jedem täglichen Lauf.

@@ -323,3 +323,85 @@ export function resultLabel(shown: number, total: number, noun: [string, string]
   const word = (n: number) => (n === 1 ? noun[0] : noun[1]);
   return shown === total ? `${total} ${word(total)}` : `${shown} von ${total} ${word(total)}`;
 }
+
+// ---------- Produkt-Bibliothek ----------
+
+export const LIBRARY_PAGE_SIZE = 48;
+
+export const LIBRARY_SORTS = [
+  { value: "", label: "Meiste Übernahmen" },
+  { value: "neu", label: "Neu beim Lieferanten" },
+  { value: "gefunden", label: "Zuletzt gefunden" },
+  { value: "preis", label: "Preis aufsteigend" },
+  { value: "ki", label: "Beste KI-Bewertung" },
+] as const;
+
+export const LIBRARY_PRICES = [
+  { value: "", label: "Alle Preise" },
+  { value: "5", label: "bis 5 USD" },
+  { value: "10", label: "bis 10 USD" },
+  { value: "20", label: "bis 20 USD" },
+  { value: "50", label: "bis 50 USD" },
+] as const;
+
+export const LIBRARY_RELEVANCE = [
+  { value: "", label: "Ohne Ausgeschlossene" },
+  { value: "empfohlen", label: "Von KI empfohlen (4–5)" },
+  { value: "unklar", label: "Nur unklare" },
+  { value: "ausgeschlossen", label: "Nur ausgeschlossene" },
+  { value: "alle", label: "Alle" },
+] as const;
+
+export type LibraryFilters = {
+  text: string;
+  /** Nur Treffer eines Suchbegriffs (Live-Suche oder täglicher Begriff). */
+  term: string;
+  maxPrice: number | null;
+  relevance: "" | "empfohlen" | "unklar" | "ausgeschlossen" | "alle";
+  sort: "" | "neu" | "gefunden" | "preis" | "ki";
+  freeShipping: boolean;
+  showHidden: boolean;
+  page: number;
+};
+
+const pickOption = <T extends readonly { value: string }[]>(options: T, v: string | undefined) =>
+  (options.some((o) => o.value === v) ? v : "") as T[number]["value"];
+
+export function parseLibraryFilters(params: Params): LibraryFilters {
+  const price = Number(one(params.preis));
+  const page = Number(one(params.seite));
+  return {
+    text: (one(params.filter) ?? "").trim().slice(0, 100),
+    term: (one(params.begriff) ?? "").trim().toLowerCase().slice(0, 80),
+    maxPrice: LIBRARY_PRICES.some((p) => p.value !== "" && Number(p.value) === price) ? price : null,
+    relevance: pickOption(LIBRARY_RELEVANCE, one(params.relevanz)),
+    sort: pickOption(LIBRARY_SORTS, one(params.sortierung)),
+    freeShipping: one(params.gratisversand) === "1",
+    showHidden: one(params.ausgeblendet) === "1",
+    page: Number.isInteger(page) && page > 1 && page <= 200 ? page : 1,
+  };
+}
+
+export function hasLibraryFilters(f: LibraryFilters) {
+  return Boolean(f.text || f.term || f.maxPrice || f.relevance || f.sort || f.freeShipping || f.showHidden);
+}
+
+/** Suchbegriff für eine ilike-Abfrage: Sonderzeichen von PostgREST und LIKE entfernen. */
+export function likePattern(text: string) {
+  const clean = text.replace(/[%_\\,()*:"']/g, " ").replace(/\s+/g, " ").trim();
+  return clean ? `%${clean.split(" ").join("%")}%` : null;
+}
+
+/** URL-Parameter einer Bibliotheksseite (für Blättern), leere Werte weglassen. */
+export function libraryQuery(f: LibraryFilters, page: number) {
+  const q = new URLSearchParams();
+  if (f.text) q.set("filter", f.text);
+  if (f.term) q.set("begriff", f.term);
+  if (f.maxPrice) q.set("preis", String(f.maxPrice));
+  if (f.relevance) q.set("relevanz", f.relevance);
+  if (f.sort) q.set("sortierung", f.sort);
+  if (f.freeShipping) q.set("gratisversand", "1");
+  if (f.showHidden) q.set("ausgeblendet", "1");
+  if (page > 1) q.set("seite", String(page));
+  return q.toString();
+}

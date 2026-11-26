@@ -148,3 +148,21 @@ describe("Radar-Filter", () => {
     expect(filterTopics(topics, parseRadarFilters({ reihenfolge: "change" }))[0].term).toBe("Pilzkaffee");
   });
 });
+
+describe("Produkt-Bibliothek", () => {
+  it("liest nur bekannte Werte aus der URL", async () => {
+    const { parseLibraryFilters, hasLibraryFilters } = await import("./list-filters");
+    const f = parseLibraryFilters({ filter: " fan ", begriff: "Neck Fan", preis: "10", relevanz: "empfohlen", sortierung: "x", gratisversand: "1", seite: "3" });
+    expect(f).toMatchObject({ text: "fan", term: "neck fan", maxPrice: 10, relevance: "empfohlen", sort: "", freeShipping: true, showHidden: false, page: 3 });
+    expect(hasLibraryFilters(f)).toBe(true);
+    const empty = parseLibraryFilters({ preis: "7", seite: "-1", relevanz: "boese" });
+    expect(empty).toMatchObject({ maxPrice: null, page: 1, relevance: "" });
+    expect(hasLibraryFilters(empty)).toBe(false);
+  });
+  it("baut sichere Suchmuster und Blätter-Links", async () => {
+    const { likePattern, libraryQuery, parseLibraryFilters } = await import("./list-filters");
+    expect(likePattern("neck, fan%")).toBe("%neck%fan%");
+    expect(likePattern("  ")).toBeNull();
+    expect(libraryQuery(parseLibraryFilters({ begriff: "fan", preis: "5" }), 2)).toBe("begriff=fan&preis=5&seite=2");
+  });
+});

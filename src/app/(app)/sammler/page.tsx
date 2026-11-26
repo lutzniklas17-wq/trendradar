@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
-import { getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { getAnthropicEnv, getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
 import { AD_COUNTRIES } from "@/lib/ads/meta";
 import { addFeed, addWatchTerm, removeFeed, removeWatchTerm, runCollectorNow, toggleWatchTerm } from "./actions";
 
@@ -19,7 +19,7 @@ const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("de-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" }) : "noch nie";
 
 const AREA_LABEL: Record<string, string> = { trend_spy: "Trend Spy", startup_spy: "Startup Spy", future_radar: "Future Radar" };
-const JOB_LABEL: Record<string, string> = { ads: "Anzeigen", producthunt: "Product Hunt", rss: "RSS-Feeds", shops: "Shops" };
+const JOB_LABEL: Record<string, string> = { ads: "Anzeigen", producthunt: "Product Hunt", rss: "RSS-Feeds", shops: "Shops", library: "Produkt-Bibliothek", ai: "KI-Bewertung", startups: "Startups", news: "News" };
 
 type Term = { id: string; term: string; country: string; active: boolean; last_run_at: string | null; last_count: number | null; last_error: string | null; items: { name: string } | null };
 type Feed = { id: string; url: string; name: string; area: string; keywords: string[]; last_run_at: string | null; last_count: number | null; last_error: string | null };
@@ -42,6 +42,8 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
   const { supabase } = await requireOwner();
   const meta = getMetaEnv() !== null;
   const ph = getProductHuntEnv() !== null;
+  const cj = getCjEnv() !== null;
+  const ai = getAnthropicEnv() !== null;
 
   const [termsRes, feedsRes, runsRes] = await Promise.all([
     supabase.from("ad_watch_terms").select("id, term, country, active, last_run_at, last_count, last_error, items(name)").order("term"),
@@ -131,6 +133,28 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
               Tipp: Produktnamen und Nischenbegriffe in der Sprache des Landes eintragen (z. B. „nackenmassagegerät“ für DE).
             </EmptyState>
           )}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Produkt-Bibliothek (CJdropshipping)"
+            description="Jeden Tag um ca. 03:30: CJ-Trend- und Neuheitenliste plus deine Suchbegriffe von der Seite „Produkte“, sortiert nach Übernahmen durch Shops. Steine, Rohstoffe, Ersatz- und Elektronikteile werden per Regel ausgeblendet."
+            action={<RunButton job="library" disabled={!cj} label="Jetzt sammeln" reason="CJ_API_KEY fehlt" />}
+          />
+          <p className="border-t border-border px-5 py-3 text-xs text-muted">
+            {cj ? "Verbunden. Kostenlos, höchstens 1 Abfrage pro Sekunde und ein Tageslimit (CJ_DAILY_LIMIT, Standard 300)." : "Noch nicht verbunden: CJ_API_KEY in Vercel eintragen (Anleitung in den Projektdateien)."}
+          </p>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="KI-Bewertung (Claude Haiku)"
+            description="Jeden Tag um ca. 06:30: bewertet neue Bibliotheks-Produkte (relevant ja/nein, Note 1–5, kurze Begründung). Wird als Einschätzung markiert, nie als Fakt. Stoppt beim Tagesbudget (AI_MONTHLY_BUDGET_USD / 30)."
+            action={<RunButton job="ai" disabled={!ai} label="Jetzt bewerten" reason="ANTHROPIC_API_KEY fehlt" />}
+          />
+          <p className="border-t border-border px-5 py-3 text-xs text-muted">
+            {ai ? "Verbunden. Kosten stehen auf der Seite „Produkte“ unter „Tägliches Update“." : "Aus: ANTHROPIC_API_KEY fehlt. Alles andere funktioniert ohne KI."}
+          </p>
         </Card>
 
         <Card>

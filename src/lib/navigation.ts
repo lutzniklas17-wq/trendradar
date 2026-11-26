@@ -11,6 +11,7 @@ import {
   Radar,
   Rocket,
   Search,
+  ShoppingBag,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -19,6 +20,7 @@ export type NavItem = { href: string; label: string; icon: LucideIcon; descripti
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, description: "Neue Entdeckungen auf einen Blick" },
+  { href: "/produkte", label: "Produkte", icon: ShoppingBag, description: "Top-Hits und Lieferanten-Bibliothek" },
   { href: "/inbox", label: "Inbox", icon: Inbox, description: "Was sich bei den täglichen Updates geändert hat" },
   { href: "/news", label: "Daily News", icon: Newspaper, description: "E-Commerce-News aus deinen Feeds" },
   { href: "/suche", label: "Suche", icon: Search, description: "Alles zu einem Begriff aus allen Bereichen" },

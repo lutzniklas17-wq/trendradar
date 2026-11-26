@@ -40,7 +40,7 @@ export const SUPPLIER_PLATFORMS: SupplierPlatform[] = [
     color: "#1f6feb",
     domains: ["cjdropshipping.com"],
     searchUrl: (query) => `https://cjdropshipping.com/search/${q(query)}.html`,
-    dataAccess: "api_planned",
+    dataAccess: "api",
     note: "Offizielle API: Preis, Mindestmenge, Versandkosten und Lieferzeit je Zielland.",
   },
   {

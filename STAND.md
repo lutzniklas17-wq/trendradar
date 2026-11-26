@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Startup Spy und Future Radar mit echten Daten)_
+_Zuletzt aktualisiert: 26.11.2026 (Produkte: Lieferanten-Bibliothek, Top-Hits, KI-Vorbereitung)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -31,13 +31,23 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Phase 4b (gleicher Branch): Ad Spy Rangliste `/ad-spy/rangliste` über RPC `ad_rank_advertisers` und `ad_rank_ads` (Migration `0005_ad_rankings.sql`, mit lokalem Postgres 16 getestet). Sortierungen: aktiv jetzt, neu 7 Tage, längste Laufzeit, neueste; Filter Zeitraum (2/7/30 Tage), Land, Plattform, Stichwort; Drill-down pro Werbetreibendem; Links zu Shop Spy/„Shop verfolgen“ und Ad Library. Live-Suche hat „Täglich sammeln“. Umschalter `src/components/ads/ad-spy-nav.tsx`, Logik `src/lib/ads/rankings.ts`.
 - Phase 4c (gleicher Branch): Verknüpfungen in `src/lib/links.ts`. Produktseite Tab „Anzeigen & Trends“ (`src/components/product/market-section.tsx`): Stichwörter des Produkts täglich sammeln (`ad_watch_terms.item_id`), Werbetreibende und längste Anzeigen aus `ad_term_hits` plus Namenssuche im gespeicherten Anzeigentext, Links zu Rangliste/Shop Spy/Ad Library, letzter Google-Trends-Abruf. Shop-Detail: „Alle aktiven Anzeigen“, verknüpfte Produkte, häufigste Anzeigentitel. Shop-Zählung speichert jetzt auch die Anzeigen (Sichtung mit Land „EU“).
 - Phase 4d (gleicher Branch, Migration `0006_news_inbox.sql`, mit Postgres 16 getestet): Daily News `/news` + `/news/[id]` (Feeds mit `kind='news'`, Tabelle `news_articles`: Titel, Bild aus media:content/enclosure/img, Anrisstext, Link; keine Volltexte; Vorschläge = Google-News-RSS-Suchen in `src/lib/news.ts`, Format nicht live getestet, kein Netz in der Sandbox). Inbox `/inbox` (`inbox_entries`, `src/lib/inbox.ts`): Einträge nur bei Änderungen aus Anzeigen-Sammellauf (neue/beendete Anzeigen, neue Werbetreibende), Product Hunt, RSS, Shops (`shopChange`). Favoriten: `tracked_shops.favorite` + Stern (`FavoriteShopButton`), Watchlist heisst jetzt „Favoriten“. Startup Spy und Future Radar listen gesammelte Einträge (`src/components/areas/area-items.tsx`). Rangliste nutzt `FilterBar`.
-- Phase 5a (Branch `claude/project-thread-vb7kv3`, PR offen, Migration `0007_startup_spy.sql`, mit Postgres 16 getestet):
+- Phase 5a (PR #8, gemergt, Migration `0007_startup_spy.sql`, mit Postgres 16 getestet):
   - E-Commerce-Filter nach Regeln `src/lib/startups/relevance.ts` (Ausschluss Öl/Gas, Bergbau, Industrie, Chemie, Pharma, Finanzen, Krypto, Immobilien, B2B-Software, Beratung, Personal, Rüstung, Logistik; kurze Begriffe nur als ganzes Wort). Gilt für Product Hunt, alle RSS-Feeds und neue Werbetreibende. `items.relevance` + `relevance_reason`.
   - Neue Quelle „Neue Werbetreibende“ (`src/lib/startups/new-advertisers.ts`, RPC `new_advertisers`, Job `startups`, Cron 03:40 UTC): älteste bekannte Anzeige ≤ 60 Tage, ≤ 15 bekannte Anzeigen, eigene Shop-Domain (`ads.domain` neu, Plattformen/Marktplätze ausgeschlossen) → Startup Spy, `stage='small_business'`. Product Hunt → `stage='startup'`, `launched_at` = Launch.
   - Duplikate zusätzlich über gleiche Website-Domain im selben Bereich (`websiteHost`).
   - Startup Spy (`src/components/startups/startup-list.tsx`): Filter Art, „Gestartet ≤ 30/90/180 Tage“, Relevanz, Quelle, Sortierung (`filterStartups`).
   - Future Radar: Tabelle `radar_topics`, RPC `radar_topic_stats` (News 7 T/Vorwoche, Anzeigen über gleichnamiges Stichwort, Einträge 30 T). Fakt / Signal / Einschätzung getrennt; Einschätzung nach Regeln in `src/lib/radar/assess.ts` (min. 3 Treffer, 14 Tage Verlauf). Radar-Filter nutzen eigene URL-Parameter (`einschaetzung`, `reihenfolge`).
   - Abwärtskompatibel: Ohne Migration 0007 speichern Anzeigen und Einträge ohne die neuen Spalten.
+- Phase 6a (Branch `claude/project-thread-ybhadj`, PR offen, Migration `0008_product_library.sql`, mit Postgres 16 getestet):
+  - Seite `/produkte` (Navigation „Produkte“ direkt nach Dashboard): Live-Suche bei CJ, Top-Hits, Bibliothek mit `FilterBar` (Relevanz, Preis, Sortierung, Gratisversand, Ausgeblendete, Begriff `begriff`, Seiten à 48), Karten mit grossem Bild (`src/components/library/product-card.tsx`), „Übernehmen“ legt Produkt (Trend Spy) + CJ-Angebot an, „Ausblenden“, Links zu AliExpress/Alibaba/Temu (nur Links).
+  - CJdropshipping API 2.0 (`src/lib/library/cj.ts`, `service.ts`): `POST /authentication/getAccessToken` mit `apiKey` (Token 180 Tage, in `provider_tokens`), `GET /product/listV2` (`keyWord`, `orderBy=1` = Übernahmen, `productFlag` 0 Trend/1 neu, Antwort `data.content[].productList[]`), Header `CJ-Access-Token`, 1 Anfrage/s, Tageslimit `CJ_DAILY_LIMIT` (Standard 300, CJ-Grenze 1000) über `api_usage` + RPC `bump_api_usage`. Produkt-URL = CJ-Suche nach SKU (Detail-URL-Format nicht dokumentiert). Nicht mit echtem Key getestet.
+  - Tabellen `supplier_products` (u. a. `listed_count` = CJ `listedNum`, `relevance`, `ai_*`), `supplier_product_snapshots` (1 pro Tag → Wachstum), `library_terms`, `api_usage`, `provider_tokens`; RPC `ad_counts_by_term`.
+  - Regel-Filter `src/lib/library/relevance.ts`: Steine/Rohstoffe, Ersatzteile, Elektronikbauteile, Werkstatt/Industrie, Grosshandel → ausgeschlossen (mit Grund); „stone“ bei Schmuck/Deko/Gua Sha erlaubt; ohne Bild oder < 0.50 USD → unklar.
+  - Top-Hits `src/lib/library/top-hits.ts`: Fakt (Übernahmen), Signale (+Übernahmen in 5–10 Tagen, neu bei CJ ≤ 30 Tage, Meta-Anzeigen zum gleichen Stichwort), Einschätzung (KI-Note). Ohne Signal kein Top-Hit; 12 Plätze.
+  - Täglich: Cron `job=library` 02:30 UTC (CJ Trend + Neu + Begriffe, max. 60 Abfragen, 240 s), `job=ai` 05:30 UTC.
+  - KI (`src/lib/ai/`): `@anthropic-ai/sdk`, Modell `claude-haiku-5-5` (0.10/0.50 USD pro Mio. Tokens), `messages.parse` mit Zod-Schema, effort low, 20 Produkte pro Anfrage, max. 100 pro Tag, Budget `AI_MONTHLY_BUDGET_USD` (Standard 5) / 30 pro Tag, Kosten in `api_usage`. Ohne `ANTHROPIC_API_KEY` aus. Entscheidung: keine Batch-API, weil die Ersparnis bei diesem Volumen Cents sind und Batch einen zweiten Abhol-Lauf braucht; Caching greift erst ab ca. 1–4k Tokens Prefix, der Systemprompt ist kürzer.
+  - Datensammler-Seite: Karten „Produkt-Bibliothek“ und „KI-Bewertung“ mit „Jetzt …“-Knopf.
+  - Anleitung für Nutzer: Projektdateien `anleitungen/cj-und-claude-zugang.md`.
 - Quellen geprüft 26.11.2026: Kickstarter/Indiegogo ohne offene API (nur Links). SHAB-API (amtsblattportal.ch, Neueintragungen HR01) existiert, Doku per robots gesperrt und kein Netz in der Sandbox → nicht gebaut, erst mit echtem Test.
 - Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
@@ -59,6 +69,8 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - `supabase/migrations/*`
 
 ## Offene Punkte
+- Nutzer (PR Phase 6a): Migration 0008 vor dem Merge ausführen; CJ-Konto + `CJ_API_KEY`; optional `ANTHROPIC_API_KEY` (Kosten zugestimmt, Key fehlt). Seite `/produkte` nur mit Testdaten-Vorschau geprüft (hell/dunkel/390 px), nicht mit echter Supabase.
+- Bibliothek: Produkte, die aus den Top-50 eines Begriffs fallen, bekommen keinen neuen Messpunkt (Wachstum nur für Produkte, die täglich wieder gefunden werden). AliExpress erst nach API-Freigabe.
 - Nutzer (PR Phase 5a): Migration 0007 vor dem Merge ausführen. Startup Spy füllt sich erst mit Anzeigen-Stichwörtern + Meta-Token (oder Product-Hunt-Token); Future Radar braucht News-Feeds und eigene Themen. Seiten nicht im Browser geprüft (kein Supabase in der Sandbox).
 - Design: Ad-Spy-Rangliste nutzt `FilterBar`, Live-Suche `inputClass`. Produktseite und Rechner später feiner überarbeiten. Neue Seiten (News, Inbox, Sammler, Rangliste) nicht im Browser geprüft (ohne Supabase-Zugang in der Sandbox nicht renderbar).
 - Nutzer (PR Phase 4): Migrationen 0004, 0005, 0006 ausführen; optional `PRODUCTHUNT_TOKEN`; Stichwörter unter „Datensammler“ und News-Feeds unter „Daily News“ eintragen.
@@ -68,4 +80,4 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-Phase 5a mergen und mit echten Daten prüfen. Danach: KI-Grundlage (Haiku, Batch, Cache, Tageslimit) für unklare Relevanz und Future-Radar-Bewertung, sobald `ANTHROPIC_API_KEY` da ist; CJdropshipping-Lieferanten-Bibliothek mit Top-Hits; optional SHAB-Neueintragungen (Schweiz) nach Test; Dashboard.
+Phase 6a mergen (nach Migration 0008) und mit echtem CJ-Key prüfen. Danach: Dashboard-Startseite mit allem Neuen auf einen Blick (neue Top-Hits, Inbox, Startups, News, Läufe); KI auch für unklare Startup-Relevanz und Future-Radar; optional SHAB-Neueintragungen.
