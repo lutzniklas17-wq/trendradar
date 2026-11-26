@@ -12,6 +12,7 @@ import { getMetaEnv } from "@/lib/env";
 import { libraryPageUrl, PAGE_ADS_LIMIT } from "@/lib/ads/meta";
 import { formatCount, MAX_PAGES_PER_SHOP, shopTrend, sortedDomains } from "@/lib/shops/shops";
 import { refreshShop, removeShop } from "../actions";
+import { loadShopLinks } from "@/lib/links";
 
 export const metadata: Metadata = { title: "Shop" };
 export const maxDuration = 120;
@@ -49,6 +50,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
   const domains = sortedDomains(latest?.domains ?? {});
   const withoutDomain = latest?.domains?.[""] ?? 0;
   const configured = getMetaEnv() !== null;
+  const links = await loadShopLinks(supabase, shop.page_id);
 
   return (
     <>
@@ -102,6 +104,49 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
             <p className="px-5 py-6 text-sm text-muted">
               {snaps.length ? "Erst ein Messpunkt. Der Verlauf erscheint ab dem zweiten Tag." : "Noch keine Zählung."}
             </p>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Anzeigen und Produkte dieses Shops"
+            description="Aus gespeicherten Daten: jede Zählung speichert die aktiven Anzeigen. Produkte erscheinen hier, wenn ein Sammel-Stichwort eines Produkts Anzeigen dieses Shops gefunden hat."
+            action={
+              links.advertiserId ? (
+                <Link href={`/ad-spy/rangliste?werbetreibender=${links.advertiserId}&zeitraum=7`} className="text-sm font-medium text-accent hover:underline">
+                  Alle aktiven Anzeigen →
+                </Link>
+              ) : null
+            }
+          />
+          {links.products.length ? (
+            <div className="border-t border-border px-5 py-3 text-sm">
+              <p className="mb-2 text-xs font-medium text-muted">Verknüpfte Produkte</p>
+              <ul className="flex flex-wrap gap-2">
+                {links.products.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/produkt/${p.id}`} className="rounded-full border border-border px-3 py-1 hover:border-accent hover:text-accent">
+                      {p.name} <span className="text-muted">· {p.ads}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {links.titles.length ? (
+            <div className="border-t border-border px-5 py-3 text-sm">
+              <p className="mb-2 text-xs font-medium text-muted">Häufigste Anzeigentitel (meist der beworbene Produktname) · Signal</p>
+              <ul className="divide-y divide-border">
+                {links.titles.map((t) => (
+                  <li key={t.title} className="flex items-center justify-between gap-3 py-2">
+                    <span>{t.title}</span>
+                    <span className="text-xs text-muted tabular-nums">{t.count} Anzeigen</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="border-t border-border px-5 py-3 text-sm text-muted">Noch keine gespeicherten Anzeigen. Nach der nächsten Zählung erscheinen sie hier.</p>
           )}
         </Card>
 

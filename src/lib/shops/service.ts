@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMetaEnv } from "@/lib/env";
 import { buildPageAdsUrl, META_SOURCE_ID, type MetaAd } from "@/lib/ads/meta";
-import { fetchArchive, metaErrorMessage } from "@/lib/ads/service";
+import { fetchArchive, metaErrorMessage, recordSightings, saveAdsWithIds } from "@/lib/ads/service";
 import { MAX_PAGES_PER_SHOP, summarizeShopAds, zurichDay, type ShopSummary } from "@/lib/shops/shops";
 
 type FetchFn = typeof fetch;
@@ -57,6 +57,9 @@ export async function snapshotShop(
       },
       { onConflict: "shop_id,day" },
     );
+    // Anzeigen speichern und als „in der EU aktiv gesehen“ markieren: so erscheinen sie in der Rangliste und beim Shop.
+    const ids = await saveAdsWithIds(supabase, ads);
+    if (ids) await recordSightings(supabase, ids.values(), "EU", day);
     // Seitenname kann sich ändern; Meta liefert ihn mit jeder Anzeige.
     const name = ads.find((a) => a.pageName)?.pageName ?? shop.name;
     await supabase.from("tracked_shops").update({ name, last_checked_at: now.toISOString(), last_error: null }).eq("id", shop.id);
