@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Database, ExternalLink, Megaphone, Package, Store } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
+import { WhatsNew } from "@/components/home/whats-new";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -45,6 +46,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   return (
     <>
       <PageHeader title="Start" description="Was heute auffällt: Anzeigen, Shops und Produkte aus deinen täglichen Sammelläufen." />
+
+      <WhatsNew />
 
       <section aria-labelledby="top10" className="mb-8">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">

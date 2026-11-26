@@ -13,8 +13,8 @@ import { ProductCard, type LibraryProduct } from "@/components/library/product-c
 import { requireOwner } from "@/lib/auth";
 import { getAnthropicEnv, getCjEnv } from "@/lib/env";
 import { SUPPLIER_PLATFORMS } from "@/lib/platforms";
-import { topHits, type HitInput } from "@/lib/library/top-hits";
-import { dayDaysAgo, zurichDay } from "@/lib/shops/shops";
+import { LIBRARY_COLUMNS, loadTopHits } from "@/lib/library/load";
+import { zurichDay } from "@/lib/shops/shops";
 import {
   hasLibraryFilters,
   LIBRARY_PAGE_SIZE,
@@ -32,8 +32,6 @@ export const metadata: Metadata = { title: "Produkte" };
 // Live-Suche und „Jetzt aktualisieren“ warten auf CJ (1 Anfrage pro Sekunde).
 export const maxDuration = 300;
 
-const COLUMNS =
-  "id, title, image_url, price, currency, category_path, listed_count, free_shipping, has_video, product_url, relevance, relevance_reason, hidden, item_id, ai_relevant, ai_score, ai_reason";
 
 const COUNTRY_OPTIONS = [
   { value: "", label: "Alle Lager" },
@@ -47,11 +45,6 @@ const COUNTRY_OPTIONS = [
 const dateFormat = new Intl.DateTimeFormat("de-CH", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Zurich" });
 
 type Term = { id: string; term: string; last_run_at: string | null; last_count: number | null; last_error: string | null };
-type HitRow = LibraryProduct & {
-  listed_at: string | null;
-  search_terms: string[];
-  supplier_product_snapshots: { day: string; listed_count: number | null }[];
-};
 
 export default async function ProduktePage({ searchParams }: PageProps<"/produkte">) {
   const params = await searchParams;
@@ -61,18 +54,8 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const cj = getCjEnv();
   const ai = getAnthropicEnv() !== null;
 
-  // Top-Hits: Kandidaten mit Verlauf der letzten 14 Tage
-  const hitsQuery = supabase
-    .from("supplier_products")
-    .select(`${COLUMNS}, listed_at, search_terms, supplier_product_snapshots(day, listed_count)`)
-    .eq("hidden", false)
-    .neq("relevance", "irrelevant")
-    .gte("supplier_product_snapshots.day", dayDaysAgo(14))
-    .order("listed_count", { ascending: false, nullsFirst: false })
-    .limit(400);
-
   // Bibliothek mit Filtern (in der Datenbank, damit auch grosse Bestände schnell bleiben)
-  let q = supabase.from("supplier_products").select(COLUMNS, { count: "exact" });
+  let q = supabase.from("supplier_products").select(LIBRARY_COLUMNS, { count: "exact" });
   if (!filters.showHidden) q = q.eq("hidden", false);
   const like = likePattern(filters.text);
   if (like) q = q.ilike("title", like);
@@ -91,33 +74,15 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const from = (filters.page - 1) * LIBRARY_PAGE_SIZE;
   q = q.range(from, from + LIBRARY_PAGE_SIZE - 1);
 
-  const [hitsRes, libRes, totalRes, termsRes, adsRes, usageRes] = await Promise.all([
-    hitsQuery,
+  const [hits, libRes, totalRes, termsRes, usageRes] = await Promise.all([
+    loadTopHits(supabase),
     q,
     supabase.from("supplier_products").select("id", { count: "exact", head: true }),
     supabase.from("library_terms").select("id, term, last_run_at, last_count, last_error").order("term"),
-    supabase.rpc("ad_counts_by_term"),
     supabase.from("api_usage").select("provider, calls, cost_usd").eq("day", zurichDay()),
   ]);
   const migrationMissing = Boolean(libRes.error && totalRes.error);
 
-  const adsByTerm = new Map(((adsRes.data ?? []) as { term: string; ads: number }[]).map((r) => [r.term, Number(r.ads)]));
-  const hitRows = (hitsRes.data ?? []) as unknown as HitRow[];
-  const inputs: HitInput[] = hitRows.map((r) => ({
-    id: r.id,
-    listedCount: r.listed_count,
-    listedAt: r.listed_at,
-    relevance: r.relevance,
-    hidden: r.hidden,
-    imageUrl: r.image_url,
-    searchTerms: r.search_terms ?? [],
-    aiRelevant: r.ai_relevant,
-    aiScore: r.ai_score,
-    aiReason: r.ai_reason,
-    snapshots: (r.supplier_product_snapshots ?? []).map((s) => ({ day: s.day, listedCount: s.listed_count })),
-  }));
-  const hits = topHits(inputs, adsByTerm);
-  const byId = new Map(hitRows.map((r) => [r.id, r]));
 
   const products = (libRes.data ?? []) as unknown as LibraryProduct[];
   const matching = libRes.count ?? products.length;
@@ -196,10 +161,9 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
         </div>
         {hits.length ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {hits.map((h, i) => {
-              const row = byId.get(h.id);
-              return row ? <ProductCard key={h.id} product={row} claims={h.claims} rank={i + 1} /> : null;
-            })}
+            {hits.map(({ hit, product }, i) => (
+              <ProductCard key={hit.id} product={product} claims={hit.claims} rank={i + 1} />
+            ))}
           </div>
         ) : (
           <Card>
