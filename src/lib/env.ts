@@ -6,6 +6,15 @@ export function getPublicSupabaseEnv() {
   return { url, anonKey };
 }
 
+/** Zugangsdaten für DataForSEO (API-Login und API-Passwort). Nur serverseitig lesen. */
+export function getDataForSeoEnv() {
+  const login = process.env.DATAFORSEO_LOGIN?.trim();
+  const password = process.env.DATAFORSEO_PASSWORD?.trim();
+  if (!login || !password) return null;
+  const limit = Number(process.env.DATAFORSEO_DAILY_LIMIT);
+  return { login, password, dailyLimit: Number.isInteger(limit) && limit > 0 ? limit : 30 };
+}
+
 /** E-Mail-Adresse des einzigen erlaubten Kontos. Nur serverseitig lesen. */
 export function getAllowedEmail() {
   return process.env.ALLOWED_EMAIL?.trim().toLowerCase() || null;

@@ -26,6 +26,19 @@ keine unzulässigen Scraping-Methoden.
    setzen, siehe `.env.example`.
 7. **Vercel:** Repository importieren, Framework „Next.js“, deployen.
 
+## Google Trends (DataForSEO)
+
+Die Seite „Google Trends“ fragt DataForSEO ab (Endpoint `google_trends/explore/live`, laut Preisseite 0.011 USD pro Abfrage).
+Ohne Zugangsdaten zeigt sie keine Kurven und keine Beispieldaten.
+
+1. Konto auf [app.dataforseo.com/register](https://app.dataforseo.com/register) eröffnen und E-Mail bestätigen.
+2. Im Dashboard unter **API Access** den **API-Login** und das **API-Passwort** kopieren (nicht das Login-Passwort der Website).
+3. In Vercel als `DATAFORSEO_LOGIN` und `DATAFORSEO_PASSWORD` eintragen, danach neu deployen.
+4. Optional `DATAFORSEO_DAILY_LIMIT` setzen (Standard 30 neue Abfragen pro Tag, also höchstens rund 0.33 USD).
+
+Jede Antwort wird in `trend_series` gespeichert. Dieselbe Abfrage (Begriffe, Region, Zeitraum) innerhalb von 24 Stunden
+kommt aus dem Zwischenspeicher und kostet nichts.
+
 ## Lokal entwickeln
 
 ```bash

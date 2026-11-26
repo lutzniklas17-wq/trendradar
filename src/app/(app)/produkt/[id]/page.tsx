@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -182,7 +183,19 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
         {item.description ? <p className="border-t border-border px-5 py-4 text-sm">{item.description}</p> : null}
       </Card>
       <Card className="h-fit">
-        <CardHeader title="Messwerte" description="Neuester Wert je Kennzahl, mit Quelle." />
+        <CardHeader
+          title="Messwerte"
+          description="Neuester Wert je Kennzahl, mit Quelle."
+          action={
+            <Link
+              href={`/google-trends?q=${encodeURIComponent(item.name)}`}
+              prefetch={false}
+              className="shrink-0 text-sm text-accent hover:underline"
+            >
+              Google Trends
+            </Link>
+          }
+        />
         {latestSignals.size ? (
           <ul className="divide-y divide-border text-sm">
             {[...latestSignals.values()].map((s) => (
