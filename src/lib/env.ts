@@ -1,7 +1,14 @@
 /** Öffentliche Supabase-Werte (dürfen im Browser landen, sind durch Row Level Security geschützt). */
+/** Entfernt Leerzeichen, Zeilenumbrüche und versehentlich mitkopierte Anführungszeichen. */
+export function cleanEnv(value: string | undefined) {
+  const v = value?.trim().replace(/^["']|["']$/g, "").trim();
+  return v || undefined;
+}
+
 export function getPublicSupabaseEnv() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Werte mit NEXT_PUBLIC_ werden beim Build eingesetzt: nach einer Änderung in Vercel neu deployen.
+  const url = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)?.replace(/\/+$/, "");
+  const anonKey = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   if (!url || !anonKey) return null;
   return { url, anonKey };
 }
@@ -17,7 +24,7 @@ export function getDataForSeoEnv() {
 
 /** E-Mail-Adresse des einzigen erlaubten Kontos. Nur serverseitig lesen. */
 export function getAllowedEmail() {
-  return process.env.ALLOWED_EMAIL?.trim().toLowerCase() || null;
+  return cleanEnv(process.env.ALLOWED_EMAIL)?.toLowerCase() || null;
 }
 
 /** Zugang zur Meta Ad Library API. Nur serverseitig lesen, das Token nie an den Browser geben. */
