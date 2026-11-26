@@ -9,7 +9,7 @@ import { ProductRow } from "@/components/library/product-row";
 import { AdCard, AdGrid, Monogram } from "@/components/ads/ad-card";
 import { requireOwner } from "@/lib/auth";
 import { getMetaEnv } from "@/lib/env";
-import { dayCovers, domainUrl, HOME_TABS, homeHref, parseHomeParams, topAdsOfDay, weekdayShort, zurichDayRange, type HomeTab } from "@/lib/ads/feed";
+import { dayCovers, domainUrl, itemAdCounts, HOME_TABS, homeHref, parseHomeParams, topAdsOfDay, weekdayShort, zurichDayRange, type HomeTab } from "@/lib/ads/feed";
 import { zurichDay } from "@/lib/shops/shops";
 import { cn } from "@/lib/utils";
 
@@ -236,7 +236,7 @@ async function ProductsTab({ day }: { day: string }) {
       </Card>
     );
   }
-  const ads = await productAdCounts(rows.map((r) => r.id));
+  const ads = await itemAdCounts(supabase, rows.map((r) => r.id));
   return (
     <div className="space-y-3">
       {rows.map((p, i) => (
@@ -249,28 +249,6 @@ async function ProductsTab({ day }: { day: string }) {
       ))}
     </div>
   );
-}
-
-/** Anzeigen pro Produkt über die Stichwörter des Produkts (Datensammler). */
-async function productAdCounts(itemIds: string[]) {
-  const { supabase } = await requireOwner();
-  const result = new Map<string, { active: number; total: number }>();
-  const { data: terms } = await supabase.from("ad_watch_terms").select("id, item_id").in("item_id", itemIds);
-  const termItem = new Map(((terms ?? []) as { id: string; item_id: string }[]).map((t) => [t.id, t.item_id]));
-  if (!termItem.size) return result;
-  const { data: hits } = await supabase.from("ad_term_hits").select("ad_id, term_id, ads(stopped_at)").in("term_id", [...termItem.keys()]).limit(5000);
-  const seen = new Set<string>();
-  for (const h of (hits ?? []) as { ad_id: string; term_id: string; ads: { stopped_at: string | null } | { stopped_at: string | null }[] | null }[]) {
-    const item = termItem.get(h.term_id);
-    if (!item || seen.has(`${item}:${h.ad_id}`)) continue;
-    seen.add(`${item}:${h.ad_id}`);
-    const ad = Array.isArray(h.ads) ? h.ads[0] : h.ads;
-    const c = result.get(item) ?? { active: 0, total: 0 };
-    c.total += 1;
-    if (ad && !ad.stopped_at) c.active += 1;
-    result.set(item, c);
-  }
-  return result;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

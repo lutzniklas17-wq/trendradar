@@ -260,3 +260,26 @@ export async function similarAdsOfOthers(supabase: SupabaseClient, adId: string,
   const stats = await advertiserStats(supabase, rows.map((r) => r.advertiser_id).filter((x): x is string => Boolean(x)));
   return { cards: rows.map((r) => toCard(r, stats)), terms: termIds.length };
 }
+
+/** Anzeigen pro Produkt (items.id) über die Stichwörter des Produkts im Datensammler: laufend und bekannt. */
+export async function itemAdCounts(supabase: SupabaseClient, itemIds: string[]) {
+  const result = new Map<string, AdvertiserStats>();
+  const ids = [...new Set(itemIds)];
+  if (!ids.length) return result;
+  const { data: terms } = await supabase.from("ad_watch_terms").select("id, item_id").in("item_id", ids);
+  const termItem = new Map(((terms ?? []) as { id: string; item_id: string }[]).map((t) => [t.id, t.item_id]));
+  if (!termItem.size) return result;
+  const { data: hits } = await supabase.from("ad_term_hits").select("ad_id, term_id, ads(stopped_at)").in("term_id", [...termItem.keys()]).limit(5000);
+  const seen = new Set<string>();
+  for (const h of (hits ?? []) as { ad_id: string; term_id: string; ads: { stopped_at: string | null } | { stopped_at: string | null }[] | null }[]) {
+    const item = termItem.get(h.term_id);
+    if (!item || seen.has(`${item}:${h.ad_id}`)) continue;
+    seen.add(`${item}:${h.ad_id}`);
+    const ad = Array.isArray(h.ads) ? h.ads[0] : h.ads;
+    const c = result.get(item) ?? { active: 0, total: 0 };
+    c.total += 1;
+    if (ad && !ad.stopped_at) c.active += 1;
+    result.set(item, c);
+  }
+  return result;
+}
