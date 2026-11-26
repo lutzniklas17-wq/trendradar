@@ -4,6 +4,7 @@ import { buttonClass } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { Claim } from "@/lib/library/top-hits";
 import { cn } from "@/lib/utils";
+import { ProductRow } from "@/components/library/product-row";
 import { adoptProduct, toggleHidden } from "@/app/(app)/produkte/actions";
 
 export type LibraryProduct = {
@@ -115,7 +116,18 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
         ) : null}
 
         <div className="mt-auto flex items-center gap-0.5 pt-2">
-          <form action={adoptProduct} className="min-w-0 flex-1">
+          <ProductActions product={p} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/** Übernehmen/Öffnen, beim Lieferanten ansehen, Aus- und Einblenden. */
+function ProductActions({ product: p, full = true }: { product: LibraryProduct; full?: boolean }) {
+  return (
+    <>
+          <form action={adoptProduct} className={full ? "min-w-0 flex-1" : undefined}>
             <input type="hidden" name="id" value={p.id} />
             <SubmitButton size="sm" variant={p.item_id ? "secondary" : "primary"} className="w-full min-w-0 px-2" pendingLabel="…">
               {p.item_id ? "Öffnen" : "Übernehmen"}
@@ -140,8 +152,45 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
               {p.hidden ? <Eye className="size-3.5" aria-label="Wieder einblenden" /> : <EyeOff className="size-3.5" aria-label="Ausblenden" />}
             </SubmitButton>
           </form>
-        </div>
-      </div>
-    </article>
+    </>
+  );
+}
+
+/** Bibliotheksprodukt als Zeile (Bild | Titel, Datum, Preis | Lieferant | Anzeigen). */
+export function LibraryProductRow({
+  product: p,
+  ads,
+  rank,
+}: {
+  product: LibraryProduct & { listed_at?: string | null; first_seen_at?: string | null };
+  ads?: { active: number; total: number } | null;
+  rank?: number;
+}) {
+  const excluded = p.relevance === "irrelevant" || p.ai_relevant === false;
+  return (
+    <ProductRow
+      rank={rank}
+      muted={p.hidden}
+      product={{ ...p, supplier: "CJdropshipping" }}
+      ads={ads}
+      adsHint={p.item_id ? "Noch keine Anzeigen. Stichwort im Datensammler anlegen." : "Übernehmen, um Anzeigen zu diesem Produkt zu sammeln."}
+      badges={
+        <>
+          {p.ai_score !== null ? (
+            <Badge tone={p.ai_score >= 4 ? "accent" : "neutral"} title={p.ai_reason ?? "KI-Einschätzung"}>
+              Einschätzung · KI {p.ai_score}/5
+            </Badge>
+          ) : null}
+          {p.relevance === "unclear" ? <Badge tone="warning" title={p.relevance_reason ?? undefined}>Unklar</Badge> : null}
+          {excluded ? (
+            <Badge tone="negative" title={p.relevance_reason ?? p.ai_reason ?? undefined}>
+              Ausgeschlossen
+            </Badge>
+          ) : null}
+          {p.item_id ? <Badge tone="positive">Übernommen</Badge> : null}
+        </>
+      }
+      actions={<ProductActions product={p} full={false} />}
+    />
   );
 }

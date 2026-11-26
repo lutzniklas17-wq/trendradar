@@ -9,7 +9,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, inputClass } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { ProductCard, type LibraryProduct } from "@/components/library/product-card";
+import { LibraryProductRow, ProductCard, type LibraryProduct } from "@/components/library/product-card";
+import { QuickChips } from "@/components/ui/quick-chips";
+import { itemAdCounts } from "@/lib/ads/feed";
 import { requireOwner } from "@/lib/auth";
 import { getAnthropicEnv, getCjEnv } from "@/lib/env";
 import { SUPPLIER_PLATFORMS } from "@/lib/platforms";
@@ -55,7 +57,7 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const ai = getAnthropicEnv() !== null;
 
   // Bibliothek mit Filtern (in der Datenbank, damit auch grosse Bestände schnell bleiben)
-  let q = supabase.from("supplier_products").select(LIBRARY_COLUMNS, { count: "exact" });
+  let q = supabase.from("supplier_products").select(`${LIBRARY_COLUMNS}, listed_at, first_seen_at`, { count: "exact" });
   if (!filters.showHidden) q = q.eq("hidden", false);
   const like = likePattern(filters.text);
   if (like) q = q.ilike("title", like);
@@ -84,7 +86,12 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const migrationMissing = Boolean(libRes.error && totalRes.error);
 
 
-  const products = (libRes.data ?? []) as unknown as LibraryProduct[];
+  const products = (libRes.data ?? []) as unknown as (LibraryProduct & { listed_at: string | null; first_seen_at: string | null })[];
+  const adCounts = await itemAdCounts(supabase, products.map((p) => p.item_id).filter((x): x is string => Boolean(x)));
+  const chipHref = (change: Partial<typeof filters>) => {
+    const q = libraryQuery({ ...filters, ...change }, 1);
+    return q ? `/produkte?${q}` : "/produkte";
+  };
   const matching = libRes.count ?? products.length;
   const total = totalRes.count ?? 0;
   const pages = Math.max(1, Math.ceil(matching / LIBRARY_PAGE_SIZE));
@@ -186,15 +193,29 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
           query={filters.text}
           queryPlaceholder="In der Bibliothek filtern…"
           keep={filters.term ? { begriff: filters.term } : {}}
-          controls={[
-            { kind: "select", name: "relevanz", label: "Relevanz", value: filters.relevance, options: LIBRARY_RELEVANCE },
-            { kind: "select", name: "preis", label: "Einkaufspreis", value: filters.maxPrice ? String(filters.maxPrice) : "", options: LIBRARY_PRICES },
-            { kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: LIBRARY_SORTS },
-            { kind: "toggle", name: "gratisversand", label: "Gratisversand", checked: filters.freeShipping },
-            { kind: "toggle", name: "ausgeblendet", label: "Ausgeblendete zeigen", checked: filters.showHidden },
+          controls={[{ kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: LIBRARY_SORTS }]}
+          groups={[
+            { title: "Preis", controls: [{ kind: "select", name: "preis", label: "Einkaufspreis", value: filters.maxPrice ? String(filters.maxPrice) : "", options: LIBRARY_PRICES }] },
+            { title: "Relevanz", controls: [{ kind: "select", name: "relevanz", label: "Relevanz", value: filters.relevance, options: LIBRARY_RELEVANCE }] },
+            {
+              title: "Versand und Anzeige",
+              controls: [
+                { kind: "toggle", name: "gratisversand", label: "Gratisversand", checked: filters.freeShipping },
+                { kind: "toggle", name: "ausgeblendet", label: "Ausgeblendete zeigen", checked: filters.showHidden },
+              ],
+            },
           ]}
           active={active}
           resultLabel={resultLabel(products.length, matching, ["Produkt", "Produkte"])}
+        />
+        <QuickChips
+          items={[
+            { label: "Meiste Übernahmen", href: chipHref({ sort: "" }), active: !filters.sort, title: "So oft haben Shops das Produkt bei CJ übernommen" },
+            { label: "Neu beim Lieferanten", href: chipHref({ sort: "neu" }), active: filters.sort === "neu" },
+            { label: "Von KI empfohlen", href: chipHref({ relevance: filters.relevance === "empfohlen" ? "" : "empfohlen" }), active: filters.relevance === "empfohlen", title: "Einschätzung, kein Fakt" },
+            { label: "Gratisversand", href: chipHref({ freeShipping: !filters.freeShipping }), active: filters.freeShipping },
+            { label: "Bis 10 USD", href: chipHref({ maxPrice: filters.maxPrice === 10 ? null : 10 }), active: filters.maxPrice === 10 },
+          ]}
         />
         {filters.term ? (
           <div className="flex items-center gap-2 border-b border-border px-5 py-2 text-[13px] text-muted">
@@ -205,9 +226,9 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
           </div>
         ) : null}
         {products.length ? (
-          <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="space-y-3 border-t border-border bg-background p-4">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <LibraryProductRow key={p.id} product={p} ads={p.item_id ? (adCounts.get(p.item_id) ?? null) : null} />
             ))}
           </div>
         ) : active ? (

@@ -52,6 +52,7 @@ export function ProductRow({
   badges,
   actions,
   muted = false,
+  adsHint = "Noch keine Anzeigen. Stichwort im Datensammler anlegen.",
 }: {
   product: ProductRowData;
   /** Anzeigen über die Stichwörter des Produkts. `undefined` blendet die Spalte aus. */
@@ -60,6 +61,8 @@ export function ProductRow({
   badges?: React.ReactNode;
   actions?: React.ReactNode;
   muted?: boolean;
+  /** Text, wenn keine Anzeigen bekannt sind. */
+  adsHint?: string;
 }) {
   const host = safeHost(p.product_url);
   const date = p.listed_at ?? p.first_seen_at ?? null;
@@ -151,7 +154,7 @@ export function ProductRow({
               <span className="text-positive">{ads.active} laufend</span> / {ads.total} bekannt
             </p>
           ) : (
-            <p className="mt-2 text-[12px] text-subtle">Noch keine Anzeigen. Stichwort im Datensammler anlegen.</p>
+            <p className="mt-2 text-[12px] text-subtle">{adsHint}</p>
           )}
           {p.item_id ? (
             <Link href={`/produkt/${p.item_id}`} className="mt-2 inline-block text-[12px] text-accent hover:underline">
