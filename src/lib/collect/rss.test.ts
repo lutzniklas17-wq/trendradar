@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanText, matchesKeywords, parseFeed, parseKeywords } from "./rss";
+import { cleanText, extractImage, matchesKeywords, parseFeed, parseKeywords } from "./rss";
 
 const RSS = `<?xml version="1.0"?><rss version="2.0"><channel><title>Shop News</title>
 <item><title><![CDATA[Neue <b>LED-Maske</b> &amp; mehr]]></title><link>https://example.com/a</link>
@@ -21,6 +21,7 @@ describe("parseFeed", () => {
       link: "https://example.com/a",
       publishedAt: "2026-11-24T08:00:00.000Z",
       summary: "Gadget – Launch",
+      image: null,
     });
   });
 
@@ -46,5 +47,18 @@ describe("Stichwörter", () => {
 
   it("cleanText ist robust bei leerem Input", () => {
     expect(cleanText(null)).toBe("");
+  });
+});
+
+describe("extractImage", () => {
+  it("nimmt media:content mit Bild, sonst enclosure, sonst das erste img", () => {
+    expect(extractImage('<media:content url="https://a.ch/v.mp4" type="video/mp4"/><media:content url="https://a.ch/b.jpg" medium="image"/>')).toBe("https://a.ch/b.jpg");
+    expect(extractImage('<enclosure url="https://a.ch/c.png" type="image/png" length="1"/>')).toBe("https://a.ch/c.png");
+    expect(extractImage("<description>&lt;img src=&quot;https://a.ch/d.jpg?w=1&amp;h=2&quot;&gt;</description>")).toBe("https://a.ch/d.jpg?w=1&h=2");
+  });
+
+  it("ignoriert http-Bilder und fehlende Bilder", () => {
+    expect(extractImage('<media:thumbnail url="http://a.ch/x.jpg"/>')).toBeNull();
+    expect(extractImage("<title>x</title>")).toBeNull();
   });
 });

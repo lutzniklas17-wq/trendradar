@@ -8,7 +8,7 @@ function fakeSupabase() {
   const calls: { table: string; op: string; args: unknown[] }[] = [];
   const from = (table: string) => {
     const chain: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "upsert", "update", "order", "limit"]) {
+    for (const m of ["select", "eq", "in", "lt", "insert", "upsert", "update", "order", "limit"]) {
       chain[m] = (...args: unknown[]) => {
         calls.push({ table, op: m, args });
         return chain;

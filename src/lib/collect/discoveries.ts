@@ -17,7 +17,7 @@ export type Discovery = {
   signal?: { metric: string; value: number; unit?: string } | null;
 };
 
-export type SaveStats = { inserted: number; updated: number; failed: number };
+export type SaveStats = { inserted: number; updated: number; failed: number; added: { id: string; name: string }[] };
 
 /** Gleiche Normalisierung wie die Spalte items.normalized_name in der Datenbank. */
 export function normalizeName(name: string) {
@@ -46,7 +46,7 @@ const clip = (v: string | null | undefined, max: number) => (v ? v.replace(/\s+/
  * 3. sonst neuer Eintrag mit Quelle und Entdeckungsdatum.
  */
 export async function saveDiscoveries(supabase: SupabaseClient, list: Discovery[], now = new Date()): Promise<SaveStats> {
-  const stats: SaveStats = { inserted: 0, updated: 0, failed: 0 };
+  const stats: SaveStats = { inserted: 0, updated: 0, failed: 0, added: [] };
   const seen = new Set<string>();
   for (const d of list) {
     const name = clip(d.name, 200);
@@ -96,6 +96,7 @@ export async function saveDiscoveries(supabase: SupabaseClient, list: Discovery[
       }
       id = data.id as string;
       stats.inserted++;
+      stats.added.push({ id, name });
     }
 
     if (d.signal && Number.isFinite(d.signal.value)) {

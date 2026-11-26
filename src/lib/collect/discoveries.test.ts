@@ -56,7 +56,7 @@ describe("Duplikaterkennung", () => {
   it("legt Neues mit Quelle und Entdeckungsdatum an und speichert das Signal", async () => {
     const { client, calls } = fake();
     const stats = await saveDiscoveries(client, [d, d], new Date("2026-11-26T05:00:00Z"));
-    expect(stats).toEqual({ inserted: 1, updated: 0, failed: 0 });
+    expect(stats).toEqual({ inserted: 1, updated: 0, failed: 0, added: [{ id: "neu-1", name: "Glow Mask" }] });
     const insert = calls.find((c) => c.table === "items" && c.op === "insert");
     expect(insert?.args[0]).toMatchObject({ source_url: d.sourceUrl, source_id: "product_hunt", first_discovered_at: "2026-11-26T05:00:00.000Z" });
     expect(calls.some((c) => c.table === "signals" && c.op === "insert")).toBe(true);
@@ -65,13 +65,13 @@ describe("Duplikaterkennung", () => {
   it("gleiche Quelle: nur aktualisieren, nichts Neues anlegen", async () => {
     const { client, calls } = fake({ bySource: [{ id: "alt" }] });
     const stats = await saveDiscoveries(client, [d]);
-    expect(stats).toEqual({ inserted: 0, updated: 1, failed: 0 });
+    expect(stats).toMatchObject({ inserted: 0, updated: 1, failed: 0 });
     expect(calls.some((c) => c.table === "items" && c.op === "insert")).toBe(false);
     expect(calls.some((c) => c.table === "rpc")).toBe(false);
   });
 
   it("sehr ähnlicher Name im selben Bereich: zusammenführen", async () => {
     const { client } = fake({ similar: [{ id: "x", area: "startup_spy", similarity: 0.9 }] });
-    expect(await saveDiscoveries(client, [d])).toEqual({ inserted: 0, updated: 1, failed: 0 });
+    expect(await saveDiscoveries(client, [d])).toMatchObject({ inserted: 0, updated: 1, failed: 0 });
   });
 });

@@ -4,7 +4,7 @@ export const RSS_SOURCE_ID = "rss";
 export const MAX_FEED_BYTES = 2_000_000;
 export const MAX_ENTRIES_PER_FEED = 50;
 
-export type FeedEntry = { title: string; link: string; publishedAt: string | null; summary: string | null };
+export type FeedEntry = { title: string; link: string; publishedAt: string | null; summary: string | null; image?: string | null };
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 
@@ -49,6 +49,41 @@ const httpUrl = (raw: string | null) => {
   }
 };
 
+const attr = (tagText: string, name: string) => tagText.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"))?.[1] ?? null;
+
+const httpsImage = (raw: string | null) => {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw.replace(/&amp;/g, "&"));
+    return u.protocol === "https:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Bild eines Eintrags, nur aus dem Feed selbst (keine Artikelseiten abrufen):
+ * media:content/media:thumbnail, enclosure mit Bildtyp oder das erste <img> in der Beschreibung.
+ */
+export function extractImage(block: string): string | null {
+  for (const m of block.matchAll(/<media:(?:content|thumbnail)\b[^>]*>/gi)) {
+    const medium = attr(m[0], "medium");
+    const type = attr(m[0], "type");
+    if (medium && medium !== "image") continue;
+    if (type && !type.startsWith("image/")) continue;
+    const url = httpsImage(attr(m[0], "url"));
+    if (url) return url;
+  }
+  for (const m of block.matchAll(/<enclosure\b[^>]*>/gi)) {
+    if (!/^image\//i.test(attr(m[0], "type") ?? "")) continue;
+    const url = httpsImage(attr(m[0], "url"));
+    if (url) return url;
+  }
+  const decoded = block.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+  const img = decoded.match(/<img\b[^>]*>/i)?.[0];
+  return img ? httpsImage(attr(img, "src")) : null;
+}
+
 /** Liest RSS 2.0 (<item>) und Atom (<entry>). Einträge ohne Titel oder gültigen Link werden übersprungen. */
 export function parseFeed(xml: string): FeedEntry[] {
   const blocks = [...xml.matchAll(/<(item|entry)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
@@ -59,7 +94,7 @@ export function parseFeed(xml: string): FeedEntry[] {
     if (!title || !link) continue;
     const summary = cleanText(tag(block, "description") ?? tag(block, "summary") ?? tag(block, "content")) || null;
     const publishedAt = isoDate(tag(block, "pubDate") ?? tag(block, "published") ?? tag(block, "updated") ?? tag(block, "dc:date"));
-    entries.push({ title: title.slice(0, 300), link, publishedAt, summary: summary ? summary.slice(0, 1000) : null });
+    entries.push({ title: title.slice(0, 300), link, publishedAt, summary: summary ? summary.slice(0, 1000) : null, image: extractImage(block) });
     if (entries.length >= MAX_ENTRIES_PER_FEED) break;
   }
   return entries;

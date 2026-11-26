@@ -9,7 +9,7 @@ function fake(terms: unknown[] = []) {
   const from = (table: string) => {
     let op = "select";
     const chain: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "upsert", "update", "insert", "order", "limit"]) {
+    for (const m of ["select", "eq", "in", "upsert", "update", "insert", "order", "limit", "delete", "lt"]) {
       chain[m] = (...args: unknown[]) => {
         if (["upsert", "update", "insert"].includes(m)) op = m;
         calls.push({ table, op: m, args });
@@ -20,6 +20,8 @@ function fake(terms: unknown[] = []) {
       if (table === "advertisers") return resolve({ data: [{ id: "adv-1", external_id: "9" }], error: null });
       if (table === "ads" && op === "upsert") return resolve({ data: [{ id: "uuid-1", external_id: "1" }, { id: "uuid-2", external_id: "2" }], error: null });
       if (table === "ad_watch_terms" && op === "select") return resolve({ data: terms, error: null });
+      if (table === "ad_term_hits" && op === "select") return resolve({ data: [{ ad_id: "uuid-old" }, { ad_id: "uuid-1" }], error: null });
+      if (table === "ad_sightings" && op === "select") return resolve({ data: [{ ad_id: "uuid-old" }], error: null });
       return resolve({ data: null, error: null });
     };
     return chain;
@@ -37,7 +39,7 @@ describe("Anzeigen-Sammellauf", () => {
     const { client, calls } = fake();
     const f = okFetch(metaPage);
     const res = await sweepTerm(client, { id: "t1", term: "led maske", country: "DE" }, { accessToken: "TOK" }, f, new Date("2026-11-26T05:00:00Z"));
-    expect(res).toEqual({ count: 2, capped: false });
+    expect(res).toEqual({ count: 2, capped: false, newAds: 2, newAdvertisers: [], ended: null, firstRun: true });
     const url = new URL(String((f as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0]));
     expect(url.searchParams.get("limit")).toBe("100");
     expect(url.searchParams.get("ad_active_status")).toBe("ACTIVE");
@@ -49,6 +51,20 @@ describe("Anzeigen-Sammellauf", () => {
     const hits = calls.find((c) => c.table === "ad_term_hits" && c.op === "upsert");
     expect(hits?.args[0]).toEqual([{ ad_id: "uuid-1", term_id: "t1" }, { ad_id: "uuid-2", term_id: "t1" }]);
     expect(JSON.stringify(calls)).not.toContain("TOK");
+  });
+
+  it("erkennt beim Folgelauf Anzeigen, die nicht mehr aktiv sind", async () => {
+    const { client, calls } = fake();
+    const res = await sweepTerm(
+      client,
+      { id: "t1", term: "led maske", country: "DE", last_run_at: "2026-11-25T05:00:00Z" },
+      { accessToken: "TOK" },
+      okFetch(metaPage),
+      new Date("2026-11-26T05:00:00Z"),
+    );
+    expect(res).toMatchObject({ ended: 1, firstRun: false });
+    const prev = calls.filter((c) => c.table === "ad_sightings" && c.op === "eq").map((c) => c.args);
+    expect(prev).toEqual([["day", "2026-11-25"], ["country", "DE"]]);
   });
 
   it("ohne Token: übersprungen", async () => {
