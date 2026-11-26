@@ -28,6 +28,7 @@ import {
   type MetaAd,
 } from "@/lib/ads/meta";
 import { searchAds, type AdLookup } from "@/lib/ads/service";
+import { trackShop } from "../shop-spy/actions";
 
 export const metadata: Metadata = { title: "Ad Spy" };
 
@@ -157,8 +158,9 @@ function Results({
             {groups.slice(0, 8).map((g) => (
               <li key={g.pageId ?? g.pageName} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
                 <span className="font-medium">{g.pageName}</span>
-                <span className="text-muted">
+                <span className="flex flex-wrap items-center gap-3 text-muted">
                   {g.count} Anzeigen{g.longestDays !== null ? ` · längste läuft ${g.longestDays} Tage` : ""}
+                  {g.pageId ? <TrackShopButton pageId={g.pageId} name={g.pageName} /> : null}
                 </span>
               </li>
             ))}
@@ -203,7 +205,10 @@ function AdRow({ ad, now }: { ad: MetaAd; now: Date }) {
   return (
     <li className="space-y-2 px-5 py-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium">{ad.pageName ?? "Unbekannte Seite"}</span>
+        <span className="flex flex-wrap items-center gap-3">
+          <span className="font-medium">{ad.pageName ?? "Unbekannte Seite"}</span>
+          {ad.pageId ? <TrackShopButton pageId={ad.pageId} name={ad.pageName ?? ""} /> : null}
+        </span>
         <span className="flex flex-wrap items-center gap-2">
           {ad.platforms.map((p) => (
             <Badge key={p}>{p.charAt(0) + p.slice(1).toLowerCase().replace("_", " ")}</Badge>
@@ -231,6 +236,19 @@ function AdRow({ ad, now }: { ad: MetaAd; now: Date }) {
         </a>
       </div>
     </li>
+  );
+}
+
+/** Werbetreibenden im Shop Spy verfolgen: aktive Anzeigen werden ab jetzt täglich gezählt. */
+function TrackShopButton({ pageId, name }: { pageId: string; name: string }) {
+  return (
+    <form action={trackShop}>
+      <input type="hidden" name="seite" value={pageId} />
+      <input type="hidden" name="name" value={name} />
+      <button type="submit" className="text-xs font-medium text-accent hover:underline">
+        Shop verfolgen
+      </button>
+    </form>
   );
 }
 

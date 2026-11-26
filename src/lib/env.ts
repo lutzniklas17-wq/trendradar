@@ -27,3 +27,15 @@ export function getMetaEnv() {
   const version = process.env.META_GRAPH_VERSION?.trim();
   return { accessToken, graphVersion: version && /^v\d+\.\d+$/.test(version) ? version : undefined };
 }
+
+/**
+ * Zugang für den täglichen Lauf (Vercel Cron). Der Service-Role-Key umgeht Row Level Security
+ * und darf nur serverseitig in diesem Lauf verwendet werden.
+ */
+export function getCronEnv() {
+  const secret = process.env.CRON_SECRET?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!secret || secret.length < 16 || !serviceRoleKey || !url) return null;
+  return { secret, serviceRoleKey, url };
+}

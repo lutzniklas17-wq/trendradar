@@ -58,6 +58,25 @@ hat einen Link zur Ad Library. Das `ad_snapshot_url` von Meta enthält das Token
 Läuft das Token ab, zeigt die Seite „Token ungültig oder abgelaufen“; dann Schritte 4 bis 6 wiederholen.
 Gefundene Anzeigen werden in `advertisers` und `ads` gespeichert (keine neue Migration nötig).
 
+## Shop Spy (aktive Anzeigen pro Shop)
+
+Die Seite „Shop Spy“ zählt für verfolgte Shops (Facebook-Seiten) alle aktiven Anzeigen über die Meta Ad Library API,
+gruppiert sie nach Domain und speichert pro Tag einen Messpunkt. Daraus entsteht der Verlauf, z. B. „von 5 auf 40 Anzeigen in einer Woche“.
+Shops fügst du im Ad Spy mit „Shop verfolgen“ hinzu oder auf der Seite mit einem Ad-Library-Link (`view_all_page_id=…`).
+
+Grenzen: Gezählt werden nur Anzeigen, die in der EU laufen. Die Domain stammt aus der Link-Beschriftung der Anzeige, nicht aus der
+echten Landingpage-URL (die liefert Meta nicht). Pro Zählung höchstens 1000 Anzeigen, darüber steht „mind.“.
+
+Einrichtung:
+1. Migration `supabase/migrations/0003_shops.sql` im Supabase SQL Editor ausführen.
+2. Für das **tägliche automatische Zählen** in Vercel zusätzlich setzen:
+   - `SUPABASE_SERVICE_ROLE_KEY`: Supabase → Project Settings → API Keys → `service_role` (geheim, nie mit `NEXT_PUBLIC_` beginnen).
+   - `CRON_SECRET`: eine zufällige Zeichenkette mit mindestens 16 Zeichen (z. B. ein Passwort-Generator, 32 Zeichen).
+3. Neu deployen. Vercel ruft dann `/api/cron/shops` einmal täglich auf (`vercel.json`, um 5 Uhr UTC; im kostenlosen Plan irgendwann in dieser Stunde)
+   und schickt `CRON_SECRET` automatisch mit. Kontrolle: Vercel → Project → Settings → Cron Jobs.
+
+Ohne diese zwei Variablen funktioniert der Shop Spy trotzdem, aber nur mit dem Knopf „jetzt zählen“.
+
 ## Lokal entwickeln
 
 ```bash

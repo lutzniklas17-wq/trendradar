@@ -140,9 +140,46 @@ export function buildSearchUrl(query: AdQuery, graphVersion = DEFAULT_GRAPH_VERS
   return url;
 }
 
+/** Alle EU-Länder: nur hier liefert Meta normale (nicht politische) Anzeigen. */
+export const EU_COUNTRIES = [
+  "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU",
+  "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
+] as const;
+
+/** Höchstens so viele Anzeigen pro Abfrageseite, wenn alle Anzeigen einer Seite gezählt werden. */
+export const PAGE_ADS_LIMIT = 100;
+
+/**
+ * Abfrage aller aktiven Anzeigen einer Facebook-Seite (ohne Token), in allen EU-Ländern.
+ * Laut Doku ist search_page_ids eine Alternative zu search_terms (bis zu 10 Seiten-IDs).
+ */
+export function buildPageAdsUrl(pageId: string, after?: string, graphVersion = DEFAULT_GRAPH_VERSION): URL {
+  const url = new URL(`https://graph.facebook.com/${graphVersion}/ads_archive`);
+  const p = url.searchParams;
+  p.set("search_page_ids", JSON.stringify([pageId]));
+  p.set("ad_reached_countries", JSON.stringify(EU_COUNTRIES));
+  p.set("ad_type", "ALL");
+  p.set("ad_active_status", "ACTIVE");
+  p.set("fields", FIELDS.join(","));
+  p.set("limit", String(PAGE_ADS_LIMIT));
+  if (after) p.set("after", after);
+  return url;
+}
+
 /** Öffentlicher Link zur Anzeige. ad_snapshot_url von Meta enthält das Token und darf nie in den Browser. */
 export function libraryUrl(adId: string) {
   return `https://www.facebook.com/ads/library/?id=${encodeURIComponent(adId)}`;
+}
+
+/** Alle Anzeigen einer Seite direkt in der Ad Library im Browser. */
+export function libraryPageUrl(pageId: string, country = "ALL") {
+  const u = new URL("https://www.facebook.com/ads/library/");
+  u.searchParams.set("active_status", "active");
+  u.searchParams.set("ad_type", "all");
+  u.searchParams.set("country", country);
+  u.searchParams.set("view_all_page_id", pageId);
+  u.searchParams.set("media_type", "all");
+  return u.toString();
 }
 
 /** Suche direkt in der Ad Library im Browser (funktioniert ohne Token, auch für die Schweiz). */
