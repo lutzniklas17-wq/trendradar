@@ -77,6 +77,28 @@ Einrichtung:
 
 Ohne diese zwei Variablen funktioniert der Shop Spy trotzdem, aber nur mit dem Knopf „jetzt zählen“.
 
+## Datensammler (tägliche Bots)
+
+Die Seite „Datensammler“ steuert die Bots, die jeden Tag automatisch laufen. Alle Quellen sind offiziell und kostenlos;
+jeder Eintrag speichert Originalquelle und Entdeckungsdatum, Duplikate (gleiche Quelle oder sehr ähnlicher Name im selben Bereich) werden zusammengeführt.
+
+| Bot | Quelle | Zeit (UTC) | Wohin |
+| --- | --- | --- | --- |
+| Anzeigen-Stichwörter | Meta Ad Library API, bis 300 aktive Anzeigen pro Stichwort und Land | 03:00 | Ad Spy, Rangliste |
+| Product Hunt | Product Hunt API v2, Launches der letzten 36 h mit Konsum-Themen | 04:00 | Startup Spy |
+| RSS-Feeds | eigene Liste von RSS/Atom-Feeds, optional mit Stichwortfilter | 04:30 | Trend Spy, Startup Spy oder Future Radar |
+| Shops | Meta Ad Library API | 05:00 | Shop Spy |
+
+Bewusst **nicht** dabei (Stand 26.11.2026): Reddit (neue API-Zugänge brauchen Freigabe durch Reddit), Kickstarter/Indiegogo, TikTok Creative Center,
+Amazon (Nutzungsbedingungen verbieten automatisches Auslesen, nur Links), Shopify `/products.json` (keine offizielle API, Shopify will den Zugang einschränken).
+
+Einrichtung:
+1. Migration `supabase/migrations/0004_collectors.sql` im Supabase SQL Editor ausführen.
+2. `CRON_SECRET` und `SUPABASE_SERVICE_ROLE_KEY` wie unter „Shop Spy“ setzen (falls noch nicht geschehen).
+3. Optional Product Hunt: auf https://www.producthunt.com/v2/oauth/applications eine Anwendung anlegen (Redirect-URI z. B. `https://localhost`),
+   dort den **Developer Token** kopieren und in Vercel als `PRODUCTHUNT_TOKEN` eintragen. Kostenlos, laut Product Hunt nur für nicht kommerzielle Nutzung.
+4. Neu deployen. Unter Vercel → Settings → Cron Jobs erscheinen vier tägliche Läufe.
+
 ## Lokal entwickeln
 
 ```bash

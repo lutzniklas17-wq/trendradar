@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Shop Spy)_
+_Zuletzt aktualisiert: 26.11.2026 (Datensammler)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -23,7 +23,11 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 
 - Phase 3c (PR #4, gemergt): Meta Ad Spy über Ad Library API (`ads_archive`, v26.0, Felder laut Doku). Suche nach Begriff, EU-Land, Status, Plattform; Paging per Cursor; Treffer in `advertisers`/`ads` gespeichert; Signale „lange Laufzeit“ (ab 30 Tagen) und „mehrere Anzeigen pro Seite“. Ohne Token: Hinweis plus Browser-Links zur Ad Library (auch Schweiz). `ad_snapshot_url` enthält das Token, deshalb nur öffentlicher Link `facebook.com/ads/library/?id=`. Link „Ad Spy“ auf der Produktseite. Keine neue Migration.
 
-- Phase 3d (Branch `claude/project-thread-s7fxvy`, PR offen): Shop Spy `/shop-spy` und `/shop-spy/[id]`. Shop = Facebook-Seite; zählt alle aktiven EU-Anzeigen per `search_page_ids` (alle 27 EU-Länder, 100 pro Seite, max. 10 Seiten → sonst „mind. 1000“), Domain aus `ad_creative_link_captions` (keine echte Landingpage-URL in der API), ein Snapshot pro Shop und Zürcher Tag. Signal „skaliert“ (verdoppelt und +5 ggü. ≥7 Tage) bzw. „stark rückläufig“. „Shop verfolgen“-Knopf im Ad Spy. Täglicher Lauf: Vercel Cron `vercel.json` → `/api/cron/shops` (braucht `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`, Proxy lässt `/api/cron` ohne Login durch). Migration `0003_shops.sql`.
+- Phase 3c ist PR #4, gemergt.
+- Phase 3d (PR #5, gemergt): Shop Spy `/shop-spy` und `/shop-spy/[id]`. Shop = Facebook-Seite; zählt alle aktiven EU-Anzeigen per `search_page_ids` (alle 27 EU-Länder, 100 pro Seite, max. 10 Seiten → sonst „mind. 1000“), Domain aus `ad_creative_link_captions` (keine echte Landingpage-URL in der API), ein Snapshot pro Shop und Zürcher Tag. Signal „skaliert“ (verdoppelt und +5 ggü. ≥7 Tage) bzw. „stark rückläufig“. „Shop verfolgen“-Knopf im Ad Spy. Täglicher Lauf: Vercel Cron `vercel.json` → `/api/cron/shops` (braucht `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`, Proxy lässt `/api/cron` ohne Login durch). Migration `0003_shops.sql`.
+
+- Phase 4a (Branch `claude/project-thread-w60asi`, PR offen): Datensammler `/sammler`. Vercel Cron `/api/cron/collect?job=ads|producthunt|rss` (gemeinsame Prüfung in `src/lib/cron.ts`). Anzeigen-Stichwörter (`ad_watch_terms`, max. 3×100 aktive Anzeigen pro Stichwort/Land, Abbruch bei Limit/Token/240 s) → `ad_sightings` (Anzeige aktiv gesehen pro Tag/Land) und `ad_term_hits`; auch manuelle Ad-Spy-Suchen mit Status „Aktiv“ schreiben Sichtungen. Product Hunt v2 (`PRODUCTHUNT_TOKEN`, Konsum-Themen-Filter ohne KI) → Startup Spy. RSS/Atom-Feeds (`feeds`, Stichwortfilter). Duplikate: gleiche `source_url` oder `find_similar_items` ≥ 0.8 im selben Bereich. Protokoll in `research_runs.job`. Migration `0004_collectors.sql`.
+- Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
 ## Verbindliche Anforderungen (Nutzer, 26.11.2026)
 - **Strikt E-Commerce.** Alles (Trend, Startup, Future Radar, Produkte) muss für Online-Shops/Dropshipping relevant sein. Branchen wie Öl, Industrie, B2B-Software, Finanzen herausfiltern.

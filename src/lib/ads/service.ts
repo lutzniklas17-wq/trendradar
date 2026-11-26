@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMetaEnv } from "@/lib/env";
+import { zurichDay } from "@/lib/shops/shops";
 import { buildSearchUrl, META_SOURCE_ID, MetaAdError, parseSearchResponse, toMetaError, type AdQuery, type AdSearchResult, type MetaAd } from "@/lib/ads/meta";
 
 export type AdLookup =
@@ -39,7 +40,15 @@ export async function fetchArchive(url: URL, accessToken: string, fetchImpl: Fet
 
 /** Speichert Werbetreibende und Anzeigen (Tabellen advertisers und ads). Gibt false zurück, wenn das Speichern scheitert. */
 export async function saveAds(supabase: SupabaseClient, ads: MetaAd[]): Promise<boolean> {
-  if (!ads.length) return true;
+  return (await saveAdsWithIds(supabase, ads)) !== null;
+}
+
+/**
+ * Wie saveAds, gibt aber die interne ID je Meta-Anzeigen-ID zurück (null bei Fehler).
+ * first_seen_at bleibt beim ersten Speichern stehen, weil es beim Upsert nicht mitgeschickt wird.
+ */
+export async function saveAdsWithIds(supabase: SupabaseClient, ads: MetaAd[]): Promise<Map<string, string> | null> {
+  if (!ads.length) return new Map();
   const pages = new Map<string, string>();
   for (const ad of ads) if (ad.pageId) pages.set(ad.pageId, ad.pageName ?? "Unbekannte Seite");
 
@@ -52,12 +61,12 @@ export async function saveAds(supabase: SupabaseClient, ads: MetaAd[]): Promise<
         { onConflict: "platform,external_id" },
       )
       .select("id, external_id");
-    if (error) return false;
+    if (error) return null;
     for (const row of data ?? []) advertiserIds.set(row.external_id, row.id);
   }
 
   const now = new Date().toISOString();
-  const { error } = await supabase.from("ads").upsert(
+  const { data: saved, error } = await supabase.from("ads").upsert(
     ads.map((ad) => ({
       platform: "meta",
       external_id: ad.id,
@@ -72,7 +81,16 @@ export async function saveAds(supabase: SupabaseClient, ads: MetaAd[]): Promise<
       fetched_at: now,
     })),
     { onConflict: "platform,external_id" },
-  );
+  ).select("id, external_id");
+  if (error) return null;
+  return new Map((saved ?? []).map((row: { id: string; external_id: string }) => [row.external_id, row.id]));
+}
+
+/** Merkt sich, dass diese Anzeigen heute im Land aktiv waren (Grundlage der eigenen Rangliste). */
+export async function recordSightings(supabase: SupabaseClient, adIds: Iterable<string>, country: string, day: string) {
+  const rows = [...new Set(adIds)].map((ad_id) => ({ ad_id, day, country }));
+  if (!rows.length) return true;
+  const { error } = await supabase.from("ad_sightings").upsert(rows, { onConflict: "ad_id,day,country", ignoreDuplicates: true });
   return !error;
 }
 
@@ -91,7 +109,10 @@ export async function searchAds(supabase: SupabaseClient, query: AdQuery, fetchI
   if (!env) return { status: "not_configured" };
   try {
     const result = await fetchAdsLive(query, env, fetchImpl);
-    const saved = await saveAds(supabase, result.ads);
+    const ids = await saveAdsWithIds(supabase, result.ads);
+    const saved = ids !== null;
+    // Aktive Treffer zählen für die eigene Rangliste („jetzt aktiv“). Fehlt die Tabelle (Migration 0004), bleibt die Suche nutzbar.
+    if (ids && query.status === "ACTIVE") await recordSightings(supabase, ids.values(), query.country, zurichDay());
     await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", META_SOURCE_ID);
     return { status: "ok", result, fetchedAt: new Date().toISOString(), saved };
   } catch (e) {

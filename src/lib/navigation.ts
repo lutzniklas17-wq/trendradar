@@ -1,5 +1,6 @@
 import {
   Bookmark,
+  Bot,
   Calculator,
   Flame,
   LayoutDashboard,
@@ -24,5 +25,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/startup-spy", label: "Startup Spy", icon: Rocket, description: "Neue Marken, Start-ups und Produktlaunches" },
   { href: "/future-radar", label: "Future Radar", icon: Radar, description: "Produkte mit möglichem Zukunftspotenzial" },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark, description: "Gespeicherte Produkte, Marken und Trends" },
+  { href: "/sammler", label: "Datensammler", icon: Bot, description: "Tägliche Bots, Stichwörter und Feeds" },
   { href: "/rechner", label: "Profit-Rechner", icon: Calculator, description: "Gewinn und Szenarien kalkulieren" },
 ];
