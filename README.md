@@ -15,7 +15,7 @@ keine unzulässigen Scraping-Methoden.
 ## Einrichtung
 
 1. **Supabase-Projekt anlegen** (Region Europa).
-2. **Schema einspielen:** Inhalt von `supabase/migrations/0001_init.sql` im Supabase SQL Editor ausführen.
+2. **Schema einspielen:** Alle Dateien in `supabase/migrations/` der Reihe nach (0001, 0002, …) im Supabase SQL Editor ausführen. Bei Updates nur die neuen Dateien ausführen.
 3. **Registrierung abschalten:** Authentication → Sign In / Providers → „Allow new users to sign up“ aus.
 4. **Eigenes Konto anlegen:** Authentication → Users → „Add user“ mit E-Mail und starkem Passwort.
 5. **Konto als Besitzer eintragen** (nur dieses Konto sieht Daten):
