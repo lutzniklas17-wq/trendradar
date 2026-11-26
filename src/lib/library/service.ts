@@ -125,7 +125,10 @@ export async function saveProducts(supabase: SupabaseClient, products: CjProduct
     };
   });
   const { data: saved, error } = await supabase.from("supplier_products").upsert(rows, { onConflict: "platform,external_id" }).select("id, listed_count, price, inventory");
-  if (error || !saved) throw new Error("Produkte konnten nicht gespeichert werden. Ist die Migration 0008 gelaufen?");
+  if (error || !saved) {
+    console.error("supplier_products upsert", error);
+    throw new Error(`Produkte konnten nicht gespeichert werden (Datenbank: ${error?.message?.slice(0, 160) ?? "keine Antwort"}).`);
+  }
   const day = zurichDay(now);
   const snaps = (saved as { id: string; listed_count: number | null; price: number | null; inventory: number | null }[]).map((s) => ({
     product_id: s.id,

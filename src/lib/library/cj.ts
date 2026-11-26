@@ -82,6 +82,11 @@ function num(v: unknown) {
   }
   return null;
 }
+/** Ganze Zahl im Bereich einer Postgres-integer-Spalte, sonst null. */
+function toInt(v: number | null) {
+  if (v === null || !Number.isFinite(v) || v < 0) return null;
+  return Math.min(Math.round(v), 2_147_483_647);
+}
 const bool = (v: unknown) => (typeof v === "boolean" ? v : v === 1 || v === "1" ? true : v === 0 || v === "0" ? false : null);
 
 /** Öffentliche Produktsuche bei CJ (keine bestätigte Detail-URL in der Doku, darum Suche nach SKU oder Titel). */
@@ -103,8 +108,9 @@ export function toProduct(raw: Record<string, unknown>): CjProduct | null {
   const sku = str(raw.sku) ?? str(raw.spu) ?? str(raw.productSku);
   const path = [str(raw.oneCategoryName), str(raw.twoCategoryName), str(raw.threeCategoryName)].filter(Boolean) as string[];
   const createdMs = num(raw.createAt);
-  const inventory = num(raw.warehouseInventoryNum);
-  const listed = num(raw.listedNum);
+  const inventory = toInt(num(raw.warehouseInventoryNum));
+  const listed = toInt(num(raw.listedNum));
+  const created = createdMs && createdMs > 1e11 && createdMs < 8.64e15 ? new Date(createdMs) : null;
   return {
     externalId,
     sku,
@@ -113,12 +119,12 @@ export function toProduct(raw: Record<string, unknown>): CjProduct | null {
     price: num(raw.nowPrice) ?? num(raw.sellPrice),
     category: path.at(-1) ?? str(raw.categoryName),
     categoryPath: path.length ? path.join(" / ") : str(raw.categoryName),
-    listedCount: listed === null ? null : Math.round(listed),
-    inventory: inventory === null ? null : Math.round(inventory),
+    listedCount: listed,
+    inventory,
     freeShipping: bool(raw.addMarkStatus),
     hasVideo: bool(raw.isVideo),
     supplierName: str(raw.supplierName),
-    listedAt: createdMs && createdMs > 1e11 ? new Date(createdMs).toISOString() : null,
+    listedAt: created && !Number.isNaN(created.getTime()) ? created.toISOString() : null,
     productUrl: cjProductUrl(sku, title),
   };
 }
