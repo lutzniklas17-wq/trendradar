@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Startup Spy und Future Radar mit echten Daten)_
+_Zuletzt aktualisiert: 26.11.2026 (Layout im Stil von Minea, Teil 1)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -31,13 +31,22 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Phase 4b (gleicher Branch): Ad Spy Rangliste `/ad-spy/rangliste` über RPC `ad_rank_advertisers` und `ad_rank_ads` (Migration `0005_ad_rankings.sql`, mit lokalem Postgres 16 getestet). Sortierungen: aktiv jetzt, neu 7 Tage, längste Laufzeit, neueste; Filter Zeitraum (2/7/30 Tage), Land, Plattform, Stichwort; Drill-down pro Werbetreibendem; Links zu Shop Spy/„Shop verfolgen“ und Ad Library. Live-Suche hat „Täglich sammeln“. Umschalter `src/components/ads/ad-spy-nav.tsx`, Logik `src/lib/ads/rankings.ts`.
 - Phase 4c (gleicher Branch): Verknüpfungen in `src/lib/links.ts`. Produktseite Tab „Anzeigen & Trends“ (`src/components/product/market-section.tsx`): Stichwörter des Produkts täglich sammeln (`ad_watch_terms.item_id`), Werbetreibende und längste Anzeigen aus `ad_term_hits` plus Namenssuche im gespeicherten Anzeigentext, Links zu Rangliste/Shop Spy/Ad Library, letzter Google-Trends-Abruf. Shop-Detail: „Alle aktiven Anzeigen“, verknüpfte Produkte, häufigste Anzeigentitel. Shop-Zählung speichert jetzt auch die Anzeigen (Sichtung mit Land „EU“).
 - Phase 4d (gleicher Branch, Migration `0006_news_inbox.sql`, mit Postgres 16 getestet): Daily News `/news` + `/news/[id]` (Feeds mit `kind='news'`, Tabelle `news_articles`: Titel, Bild aus media:content/enclosure/img, Anrisstext, Link; keine Volltexte; Vorschläge = Google-News-RSS-Suchen in `src/lib/news.ts`, Format nicht live getestet, kein Netz in der Sandbox). Inbox `/inbox` (`inbox_entries`, `src/lib/inbox.ts`): Einträge nur bei Änderungen aus Anzeigen-Sammellauf (neue/beendete Anzeigen, neue Werbetreibende), Product Hunt, RSS, Shops (`shopChange`). Favoriten: `tracked_shops.favorite` + Stern (`FavoriteShopButton`), Watchlist heisst jetzt „Favoriten“. Startup Spy und Future Radar listen gesammelte Einträge (`src/components/areas/area-items.tsx`). Rangliste nutzt `FilterBar`.
-- Phase 5a (Branch `claude/project-thread-vb7kv3`, PR offen, Migration `0007_startup_spy.sql`, mit Postgres 16 getestet):
+- Phase 5a (PR #8, gemergt, Migration `0007_startup_spy.sql`, mit Postgres 16 getestet):
   - E-Commerce-Filter nach Regeln `src/lib/startups/relevance.ts` (Ausschluss Öl/Gas, Bergbau, Industrie, Chemie, Pharma, Finanzen, Krypto, Immobilien, B2B-Software, Beratung, Personal, Rüstung, Logistik; kurze Begriffe nur als ganzes Wort). Gilt für Product Hunt, alle RSS-Feeds und neue Werbetreibende. `items.relevance` + `relevance_reason`.
   - Neue Quelle „Neue Werbetreibende“ (`src/lib/startups/new-advertisers.ts`, RPC `new_advertisers`, Job `startups`, Cron 03:40 UTC): älteste bekannte Anzeige ≤ 60 Tage, ≤ 15 bekannte Anzeigen, eigene Shop-Domain (`ads.domain` neu, Plattformen/Marktplätze ausgeschlossen) → Startup Spy, `stage='small_business'`. Product Hunt → `stage='startup'`, `launched_at` = Launch.
   - Duplikate zusätzlich über gleiche Website-Domain im selben Bereich (`websiteHost`).
   - Startup Spy (`src/components/startups/startup-list.tsx`): Filter Art, „Gestartet ≤ 30/90/180 Tage“, Relevanz, Quelle, Sortierung (`filterStartups`).
   - Future Radar: Tabelle `radar_topics`, RPC `radar_topic_stats` (News 7 T/Vorwoche, Anzeigen über gleichnamiges Stichwort, Einträge 30 T). Fakt / Signal / Einschätzung getrennt; Einschätzung nach Regeln in `src/lib/radar/assess.ts` (min. 3 Treffer, 14 Tage Verlauf). Radar-Filter nutzen eigene URL-Parameter (`einschaetzung`, `reihenfolge`).
   - Abwärtskompatibel: Ohne Migration 0007 speichern Anzeigen und Einträge ohne die neuen Spalten.
+- Layout Minea-Stil Teil 1 (Branch `claude/project-thread-hrpdjy`, PR offen, keine Migration). Vorlage: Screenshots in Projektdateien `design/minea/`. Eigener Look nach Design-Regeln, keine Minea-Farben/Texte.
+  - Sidebar in Gruppen „Entdecken / Recherche / Werkzeuge“ (`src/lib/navigation.ts`, `group`, `match`, `isNavActive`). „Dashboard“ heisst „Start“, Ad Spy öffnet die Anzeigen-Ansicht.
+  - Startseite `/`: „Top 10 des Tages“ mit Tagesauswahl (10 Tage, URL `tag`, `ansicht`), Tabs Anzeigen (an dem Tag aktiv gesehen, nach EU-Reichweite), Shops (Shop-Zählung des Tages), Produkte (an dem Tag aufgenommen, Anzeigen über Produkt-Stichwörter). Logik `src/lib/ads/feed.ts` mit Tests.
+  - Anzeigen-Karte `src/components/ads/ad-card.tsx` (Werbetreibender mit laufend/bekannt, Laufzeit, Start → heute, Länder, Reichweite, Plattformen, Vorschau, Shop-Domain, „Anzeige analysieren“). Rangliste „Einzelne Anzeigen“ nutzt das Kartenraster, Schnellwahl-Chips inkl. „Grösste EU-Reichweite“.
+  - Video/Bild: Meta liefert keine Mediendateien. Vorschau = offizielle Meta-Seite `render_ad` (wie `ad_snapshot_url`) im iframe über `/api/ads/[id]/vorschau` (nur für Besitzer, leitet mit Token weiter). **Entscheidung geändert:** Das Token erscheint dabei im Browser des Besitzers. Nicht mit echtem Token getestet; ob Meta die Einbettung erlaubt, ist offen. Fallback-Link zur Ad Library.
+  - Anzeigen-Detail `/ad-spy/anzeige/[id]`: grosse Vorschau, Fakten, Stichwörter, Shop-Info (aktive EU-Anzeigen aus Shop-Zählung, bekannte Anzeigen, Summe EU-Reichweite, älteste bekannte Anzeige, Ausgaben „nicht verfügbar“), „Shop verfolgen“, Tabs „Anzeigen dieses Shops“ / „Ähnliche Anzeigen anderer Shops“ (gleiches Stichwort).
+  - TikTok-Tab `/ad-spy/tiktok`: ehrlich „nicht verfügbar“ (Commercial Content API nur Forschung/EU), Link zur offiziellen Bibliothek.
+  - Repo design-system-extractor nicht genutzt: zieht Farben/Schriften einer Seite; Minea-Look soll nicht übernommen werden und die App braucht Login.
+  - Nicht machbar ohne Erfinden: CTA-Text, Ziel-URL, Ausgaben, Seiten-Erstelldatum, Umsatz, Besucherzahlen, Produktbilder aus Anzeigen.
 - Quellen geprüft 26.11.2026: Kickstarter/Indiegogo ohne offene API (nur Links). SHAB-API (amtsblattportal.ch, Neueintragungen HR01) existiert, Doku per robots gesperrt und kein Netz in der Sandbox → nicht gebaut, erst mit echtem Test.
 - Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
@@ -68,4 +77,6 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
+Layout Teil 2: Live-Suche und Shop Spy auf Karten umstellen, Produkte-Seite als Listenzeilen (mit dem Produkte-Thread abstimmen), aufklappbares Filterpanel in Gruppen. Vorschau mit echtem Meta-Token prüfen.
+
 Phase 5a mergen und mit echten Daten prüfen. Danach: KI-Grundlage (Haiku, Batch, Cache, Tageslimit) für unklare Relevanz und Future-Radar-Bewertung, sobald `ANTHROPIC_API_KEY` da ist; CJdropshipping-Lieferanten-Bibliothek mit Top-Hits; optional SHAB-Neueintragungen (Schweiz) nach Test; Dashboard.
