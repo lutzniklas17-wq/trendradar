@@ -1,22 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeName, pickDuplicate, saveDiscoveries, type Discovery } from "./discoveries";
+import { normalizeName, pickDuplicate, saveDiscoveries, websiteHost, type Discovery } from "./discoveries";
 
 /** Minimaler Supabase-Ersatz: items-Abfrage nach source_url, find_similar_items, insert/update. */
-function fake({ bySource = [] as { id: string }[], similar = [] as unknown[] } = {}) {
+function fake({ bySource = [] as { id: string }[], byHost = [] as { id: string }[], similar = [] as unknown[] } = {}) {
   const calls: { table: string; op: string; args: unknown[] }[] = [];
   const from = (table: string) => {
     let op = "select";
+    let host = false;
     const chain: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "limit", "insert", "update", "single"]) {
+    for (const m of ["select", "eq", "ilike", "limit", "insert", "update", "single"]) {
       chain[m] = (...args: unknown[]) => {
         if (m === "insert" || m === "update") op = m;
+        if (m === "ilike") host = true;
         calls.push({ table, op: m, args });
         return chain;
       };
     }
     chain.then = (resolve: (v: unknown) => void) => {
-      if (table === "items" && op === "select") return resolve({ data: bySource, error: null });
+      if (table === "items" && op === "select") return resolve({ data: host ? byHost : bySource, error: null });
       if (table === "items" && op === "insert") return resolve({ data: { id: "neu-1" }, error: null });
       return resolve({ data: null, error: null });
     };
@@ -73,5 +75,17 @@ describe("Duplikaterkennung", () => {
   it("sehr ähnlicher Name im selben Bereich: zusammenführen", async () => {
     const { client } = fake({ similar: [{ id: "x", area: "startup_spy", similarity: 0.9 }] });
     expect(await saveDiscoveries(client, [d])).toMatchObject({ inserted: 0, updated: 1, failed: 0 });
+  });
+
+  it("gleiche Website im selben Bereich: zusammenführen", async () => {
+    const { client, calls } = fake({ byHost: [{ id: "shop" }] });
+    expect(await saveDiscoveries(client, [{ ...d, websiteUrl: "https://www.glow.ch/de" }])).toMatchObject({ inserted: 0, updated: 1 });
+    expect(calls.find((c) => c.op === "ilike")?.args).toEqual(["website_url", "%glow.ch%"]);
+  });
+
+  it("websiteHost liest den Host ohne www", () => {
+    expect(websiteHost("https://www.Glow.ch/shop")).toBe("glow.ch");
+    expect(websiteHost("glow.ch")).toBe("glow.ch");
+    expect(websiteHost(null)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import type { Discovery, ItemArea } from "@/lib/collect/discoveries";
+import { classifyRelevance } from "@/lib/startups/relevance";
 
 export const RSS_SOURCE_ID = "rss";
 export const MAX_FEED_BYTES = 2_000_000;
@@ -123,7 +124,14 @@ export function toDiscovery(entry: FeedEntry, feed: { name: string; area: ItemAr
     sourceUrl: entry.link,
     description: entry.summary,
     category: feed.name,
+    launchedAt: feed.area === "startup_spy" ? entry.publishedAt : null,
+    relevance: classifyRelevance([entry.title, entry.summary]),
   };
+}
+
+/** Alles muss E-Commerce-relevant sein: Einträge aus ausgeschlossenen Branchen (Öl, Finanzen …) nicht speichern. */
+export function isNotExcluded(entry: FeedEntry) {
+  return classifyRelevance([entry.title, entry.summary]).relevance !== "excluded";
 }
 
 /** Lädt einen Feed mit Zeit- und Grössenlimit. */

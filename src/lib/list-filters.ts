@@ -184,6 +184,141 @@ export function filterShops<T extends FilterableShop>(shops: T[], f: ShopFilters
 }
 
 /** „3 von 12“ bzw. „12 Einträge“ für die Filterleiste. */
+// ---------- Startup Spy ----------
+
+export const STARTUP_STAGES = [
+  { value: "", label: "Alle Arten" },
+  { value: "startup", label: "Startup (Launch)" },
+  { value: "small_business", label: "Small Business (neuer Shop)" },
+] as const;
+
+export const STARTUP_LAUNCH = [
+  { value: "", label: "Jederzeit gestartet" },
+  { value: "30", label: "Gestartet ≤ 30 Tage" },
+  { value: "90", label: "Gestartet ≤ 90 Tage" },
+  { value: "180", label: "Gestartet ≤ 180 Tage" },
+] as const;
+
+export const STARTUP_RELEVANCE = [
+  { value: "", label: "E-Commerce und unklar" },
+  { value: "ecommerce", label: "Nur E-Commerce" },
+] as const;
+
+export const STARTUP_SOURCES = [
+  { value: "", label: "Alle Quellen" },
+  { value: "meta_new_advertisers", label: "Neue Werbetreibende" },
+  { value: "product_hunt", label: "Product Hunt" },
+  { value: "rss", label: "RSS-Feeds" },
+] as const;
+
+export const STARTUP_SORTS = [
+  { value: "", label: "Zuletzt entdeckt" },
+  { value: "start", label: "Zuletzt gestartet" },
+  { value: "name", label: "Name A–Z" },
+] as const;
+
+type Value<T extends readonly { value: string }[]> = T[number]["value"];
+const pick = <T extends readonly { value: string }[]>(list: T, raw: string | undefined): Value<T> =>
+  (list.find((o) => o.value === raw)?.value ?? "") as Value<T>;
+
+export type StartupFilters = {
+  text: string;
+  stage: Value<typeof STARTUP_STAGES>;
+  launchedDays: number | null;
+  relevance: Value<typeof STARTUP_RELEVANCE>;
+  source: Value<typeof STARTUP_SOURCES>;
+  sort: Value<typeof STARTUP_SORTS>;
+};
+
+export function parseStartupFilters(params: Params): StartupFilters {
+  const launch = pick(STARTUP_LAUNCH, one(params.gestartet));
+  return {
+    text: (one(params.filter) ?? "").slice(0, 100),
+    stage: pick(STARTUP_STAGES, one(params.art)),
+    launchedDays: launch ? Number(launch) : null,
+    relevance: pick(STARTUP_RELEVANCE, one(params.relevanz)),
+    source: pick(STARTUP_SOURCES, one(params.quelle)),
+    sort: pick(STARTUP_SORTS, one(params.sortierung)),
+  };
+}
+
+export function hasStartupFilters(f: StartupFilters) {
+  return Boolean(f.text || f.stage || f.launchedDays || f.relevance || f.source || f.sort);
+}
+
+export type FilterableStartup = {
+  name: string;
+  description: string | null;
+  website_url: string | null;
+  stage: string | null;
+  launched_at: string | null;
+  relevance: string | null;
+  source_id: string | null;
+  first_discovered_at: string;
+};
+
+/**
+ * Filtert Startup-Spy-Einträge. Ausgeschlossene Branchen sind nie sichtbar.
+ * „Gestartet ≤ N Tage“ braucht ein Start-Datum aus der Quelle; Einträge ohne Datum fallen dann weg.
+ */
+export function filterStartups<T extends FilterableStartup>(items: T[], f: StartupFilters, now = new Date()): T[] {
+  const since = f.launchedDays ? now.getTime() - f.launchedDays * 86_400_000 : null;
+  const out = items.filter(
+    (i) =>
+      i.relevance !== "excluded" &&
+      (!f.relevance || i.relevance === f.relevance) &&
+      (!f.stage || i.stage === f.stage) &&
+      (!f.source || i.source_id === f.source) &&
+      (since === null || (i.launched_at != null && new Date(i.launched_at).getTime() >= since)) &&
+      matchesText([i.name, i.description, i.website_url], f.text),
+  );
+  if (f.sort === "name") return out.sort((a, b) => a.name.localeCompare(b.name, "de-CH"));
+  const time = (v: string | null) => (v ? new Date(v).getTime() : 0);
+  if (f.sort === "start") return out.sort((a, b) => time(b.launched_at) - time(a.launched_at));
+  return out.sort((a, b) => time(b.first_discovered_at) - time(a.first_discovered_at));
+}
+
+// ---------- Future Radar ----------
+
+export const RADAR_OUTLOOKS = [
+  { value: "", label: "Alle Einschätzungen" },
+  { value: "rising", label: "steigend" },
+  { value: "emerging", label: "neu aufgetaucht" },
+  { value: "stable", label: "stabil" },
+  { value: "falling", label: "rückläufig" },
+  { value: "too_little", label: "zu wenig Daten" },
+] as const;
+
+export const RADAR_SORTS = [
+  { value: "", label: "Meiste Treffer diese Woche" },
+  { value: "change", label: "Grösste Zunahme" },
+  { value: "name", label: "Name A–Z" },
+] as const;
+
+export type RadarFilters = { text: string; outlook: Value<typeof RADAR_OUTLOOKS>; sort: Value<typeof RADAR_SORTS> };
+
+export function parseRadarFilters(params: Params): RadarFilters {
+  return {
+    // Eigene Parameternamen, weil auf derselben Seite auch die Feed-Liste filtert (filter, sortierung …).
+    text: (one(params.thema) ?? "").slice(0, 100),
+    outlook: pick(RADAR_OUTLOOKS, one(params.einschaetzung)),
+    sort: pick(RADAR_SORTS, one(params.reihenfolge)),
+  };
+}
+
+export function hasRadarFilters(f: RadarFilters) {
+  return Boolean(f.text || f.outlook || f.sort);
+}
+
+export type FilterableTopic = { term: string; note: string | null; outlook: string; current: number; previous: number };
+
+export function filterTopics<T extends FilterableTopic>(topics: T[], f: RadarFilters): T[] {
+  const out = topics.filter((t) => (!f.outlook || t.outlook === f.outlook) && matchesText([t.term, t.note], f.text));
+  if (f.sort === "name") return out.sort((a, b) => a.term.localeCompare(b.term, "de-CH"));
+  if (f.sort === "change") return out.sort((a, b) => b.current - b.previous - (a.current - a.previous));
+  return out.sort((a, b) => b.current - a.current);
+}
+
 export function resultLabel(shown: number, total: number, noun: [string, string] = ["Eintrag", "Einträge"]) {
   const word = (n: number) => (n === 1 ? noun[0] : noun[1]);
   return shown === total ? `${total} ${word(total)}` : `${shown} von ${total} ${word(total)}`;

@@ -6,12 +6,19 @@ import { fetchArchive, metaErrorMessage, recordSightings, saveAdsWithIds } from 
 import { zurichDay } from "@/lib/shops/shops";
 import { saveDiscoveries, type ItemArea, type SaveStats } from "@/lib/collect/discoveries";
 import { fetchRecentPosts, isEcommerceRelevant, PH_SOURCE_ID, ProductHuntError, toDiscovery as phDiscovery } from "@/lib/collect/producthunt";
-import { fetchFeed, matchesKeywords, parseFeed, RSS_SOURCE_ID, toDiscovery as rssDiscovery } from "@/lib/collect/rss";
+import { fetchFeed, isNotExcluded, matchesKeywords, parseFeed, RSS_SOURCE_ID, toDiscovery as rssDiscovery } from "@/lib/collect/rss";
 import { addInboxEntry, type Change } from "@/lib/inbox";
+import {
+  NEW_ADVERTISER_DAYS,
+  NEW_ADVERTISER_MAX_ADS,
+  NEW_ADVERTISERS_SOURCE_ID,
+  toNewAdvertiserDiscovery,
+  type NewAdvertiserRow,
+} from "@/lib/startups/new-advertisers";
 
 type FetchFn = typeof fetch;
 
-export const JOBS = ["ads", "producthunt", "rss", "news"] as const;
+export const JOBS = ["ads", "startups", "producthunt", "rss", "news"] as const;
 export type Job = (typeof JOBS)[number];
 export const isJob = (v: unknown): v is Job => typeof v === "string" && (JOBS as readonly string[]).includes(v);
 
@@ -227,6 +234,43 @@ export async function runProductHunt(supabase: SupabaseClient, { fetchImpl, now 
   }
 }
 
+/**
+ * Täglicher Startup-Lauf (nach dem Anzeigen-Lauf): Werbetreibende aus den gesammelten Anzeigen, die erst seit
+ * kurzem werben, wenige Anzeigen haben und auf eine eigene Shop-Domain verlinken → Startup Spy (Small Business).
+ * Kostet keine API-Abfrage, nutzt nur die eigene Datenbank.
+ */
+export async function runStartups(supabase: SupabaseClient, { now = new Date() }: { now?: Date } = {}): Promise<JobResult> {
+  const started = new Date();
+  const { data, error } = await supabase.rpc("new_advertisers", { p_days: NEW_ADVERTISER_DAYS, p_max_ads: NEW_ADVERTISER_MAX_ADS, p_limit: 300 });
+  if (error) {
+    const r: JobResult = { job: "startups", status: "failed", message: "Abfrage fehlgeschlagen (Migration 0007 ausgeführt?).", newItems: 0 };
+    await markSource(supabase, NEW_ADVERTISERS_SOURCE_ID, r.message);
+    await logRun(supabase, started, r);
+    return r;
+  }
+  const rows = (data ?? []) as NewAdvertiserRow[];
+  const discoveries = rows.map(toNewAdvertiserDiscovery).filter((d) => d !== null);
+  const stats = await saveDiscoveries(supabase, discoveries, now);
+  await markSource(supabase, NEW_ADVERTISERS_SOURCE_ID, null);
+  const r: JobResult = {
+    job: "startups",
+    status: stats.failed ? "partial" : "success",
+    message:
+      `${rows.length} Werbetreibende mit erster bekannter Anzeige in den letzten ${NEW_ADVERTISER_DAYS} Tagen, ` +
+      `${discoveries.length} mit eigener Shop-Domain und passender Branche, ${stats.inserted} neu, ${stats.updated} schon bekannt.`,
+    newItems: stats.inserted,
+    details: { candidates: rows.length, kept: discoveries.length, inserted: stats.inserted, updated: stats.updated, failed: stats.failed },
+  };
+  await logRun(supabase, started, r);
+  await addInboxEntry(
+    supabase,
+    "startups",
+    "Neue Shops, die gerade mit Werbung starten",
+    stats.added.map((a) => ({ kind: "added" as const, label: a.name, href: `/produkt/${a.id}` })),
+  );
+  return r;
+}
+
 /** Täglicher Feed-Lauf: liest alle aktiven Feeds, filtert nach Stichwörtern und speichert neue Einträge. */
 export async function runFeeds(supabase: SupabaseClient, { fetchImpl, now = new Date() }: { fetchImpl?: FetchFn; now?: Date } = {}): Promise<JobResult> {
   const started = new Date();
@@ -244,7 +288,9 @@ export async function runFeeds(supabase: SupabaseClient, { fetchImpl, now = new 
   let feedErrors = 0;
   for (const feed of feeds as { id: string; url: string; name: string; area: ItemArea; keywords: string[] }[]) {
     try {
-      const entries = parseFeed(await fetchFeed(feed.url, fetchImpl)).filter((e) => matchesKeywords(e, feed.keywords ?? []));
+      const entries = parseFeed(await fetchFeed(feed.url, fetchImpl))
+        .filter((e) => matchesKeywords(e, feed.keywords ?? []))
+        .filter(isNotExcluded);
       const stats = await saveDiscoveries(supabase, entries.map((e) => rssDiscovery(e, feed)), now);
       total.inserted += stats.inserted;
       total.updated += stats.updated;
@@ -325,6 +371,7 @@ export async function runNews(supabase: SupabaseClient, { fetchImpl, now = new D
 
 export function runJob(supabase: SupabaseClient, job: Job, opts: { fetchImpl?: FetchFn; max?: number } = {}) {
   if (job === "ads") return runAdSweep(supabase, opts);
+  if (job === "startups") return runStartups(supabase);
   if (job === "producthunt") return runProductHunt(supabase, opts);
   if (job === "news") return runNews(supabase, opts);
   return runFeeds(supabase, opts);

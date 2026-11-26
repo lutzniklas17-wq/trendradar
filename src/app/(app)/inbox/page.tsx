@@ -19,6 +19,7 @@ const JOBS = [
   { value: "", label: "Alle Updates" },
   { value: "ads", label: "Anzeigen" },
   { value: "shops", label: "Shops" },
+  { value: "startups", label: "Neue Shops" },
   { value: "producthunt", label: "Product Hunt" },
   { value: "rss", label: "RSS-Feeds" },
 ] as const;
