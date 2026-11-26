@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, Info } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { AlertTriangle, Check, Info, Save } from "lucide-react";
 import {
   applyScenario,
   calculateProfit,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/profit";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ProvenanceBadge, type Provenance } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn, formatNumber } from "@/lib/utils";
 
 type FieldDef = { key: ProfitField; label: string; unit: "money" | "percent"; hint?: string };
@@ -61,7 +62,15 @@ const SCENARIO_FIELDS: { key: keyof ScenarioOverrides; label: string; unit: "mon
   { key: "refundRatePercent", label: "Retouren", unit: "percent" },
 ];
 
-export type ProvenanceMap = Partial<Record<ProfitField, Exclude<Provenance, "missing" | "manual" | "empty">>>;
+export type ProvenanceMap = Partial<Record<ProfitField, Exclude<Provenance, "missing" | "empty">>>;
+
+export type ScenarioState = Record<ScenarioKey, ScenarioOverrides>;
+
+export type CalculatorSnapshot = { inputs: ProfitInputs; scenarios: ScenarioState; currency: string };
+
+export type SaveCalculator = (snapshot: CalculatorSnapshot) => Promise<{ ok: boolean; error?: string }>;
+
+const EMPTY_SCENARIOS: ScenarioState = { conservative: {}, realistic: {}, optimistic: {} };
 
 function parse(value: string): number | null {
   if (value.trim() === "") return null;
@@ -122,19 +131,33 @@ export function ProfitCalculator({
   initialInputs = EMPTY_INPUTS,
   provenance = {},
   currency: initialCurrency = "CHF",
+  initialScenarios = EMPTY_SCENARIOS,
+  onSave,
+  sourceNote,
 }: {
   initialInputs?: ProfitInputs;
   provenance?: ProvenanceMap;
   currency?: string;
+  initialScenarios?: ScenarioState;
+  /** Server Action zum Speichern; ohne sie ist der Rechner nur temporär */
+  onSave?: SaveCalculator;
+  /** Hinweis, woher vorausgefüllte Werte stammen */
+  sourceNote?: React.ReactNode;
 }) {
   const [inputs, setInputs] = useState<ProfitInputs>(initialInputs);
   const [touched, setTouched] = useState<Set<ProfitField>>(new Set());
   const [currency, setCurrency] = useState(initialCurrency);
-  const [scenarios, setScenarios] = useState<Record<ScenarioKey, ScenarioOverrides>>({
-    conservative: {},
-    realistic: {},
-    optimistic: {},
-  });
+  const [scenarios, setScenarios] = useState<ScenarioState>(initialScenarios);
+  const [saveState, setSaveState] = useState<{ status: "idle" | "saved" | "error"; error?: string }>({ status: "idle" });
+  const [saving, startSaving] = useTransition();
+
+  const save = () => {
+    if (!onSave) return;
+    startSaving(async () => {
+      const r = await onSave({ inputs, scenarios, currency });
+      setSaveState(r.ok ? { status: "saved" } : { status: "error", error: r.error ?? "Speichern fehlgeschlagen." });
+    });
+  };
 
   const result = useMemo(() => calculateProfit(inputs), [inputs]);
   const scenarioResults = useMemo(
@@ -152,6 +175,7 @@ export function ProfitCalculator({
   };
 
   const setField = (key: ProfitField, value: number | null) => {
+    setSaveState({ status: "idle" });
     setInputs((prev) => ({ ...prev, [key]: value }));
     setTouched((prev) => new Set(prev).add(key));
   };
@@ -159,7 +183,26 @@ export function ProfitCalculator({
   const optionalMissing = result.missing.filter((k) => !REQUIRED_FIELDS.includes(k));
 
   return (
-    <div className="grid gap-6 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+      {onSave || sourceNote ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 xl:col-span-5">
+          <div className="text-sm text-muted">{sourceNote}</div>
+          {onSave ? (
+            <div className="flex items-center gap-3">
+              {saveState.status === "saved" ? (
+                <span className="flex items-center gap-1 text-sm text-positive">
+                  <Check className="size-4" aria-hidden /> Gespeichert
+                </span>
+              ) : null}
+              {saveState.status === "error" ? <span className="text-sm text-negative">{saveState.error}</span> : null}
+              <Button type="button" variant="secondary" onClick={save} disabled={saving}>
+                <Save className="size-4" aria-hidden />
+                {saving ? "Speichert …" : "Kalkulation speichern"}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <Card className="xl:col-span-3">
         <CardHeader
           title="Eingaben"
@@ -169,7 +212,10 @@ export function ProfitCalculator({
               Währung
               <select
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
+                onChange={(e) => {
+                  setCurrency(e.target.value);
+                  setSaveState({ status: "idle" });
+                }}
                 className="h-8 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
               >
                 {["CHF", "EUR", "USD"].map((c) => (
@@ -321,9 +367,10 @@ export function ProfitCalculator({
                         value={scenarios[s.key][f.key] ?? null}
                         unit={f.unit}
                         currency={currency}
-                        onChange={(v) =>
-                          setScenarios((prev) => ({ ...prev, [s.key]: { ...prev[s.key], [f.key]: v } }))
-                        }
+                        onChange={(v) => {
+                          setSaveState({ status: "idle" });
+                          setScenarios((prev) => ({ ...prev, [s.key]: { ...prev[s.key], [f.key]: v } }));
+                        }}
                       />
                     </td>
                   ))}
