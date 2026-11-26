@@ -19,7 +19,7 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Phase 2 (auf `main`): Grundgerüst, Login, Schema `0001_init.sql`, Profit-Rechner.
 - Phase 3a (PR #1, gemergt): Produktseite mit Tabs, Lieferanten- und Verkaufskanäle, Angebote erfassen, Rechner speichern, Trend Spy mit Duplikatprüfung, Watchlist, Suche, Migration `0002_products.sql`.
 
-- Phase 3b (Branch `claude/project-thread-q8md4o`, PR offen): Google Trends über DataForSEO Live, Zwischenspeicher 24 h in `trend_series`, Tageslimit `DATAFORSEO_DAILY_LIMIT` (Standard 30), Seite `/google-trends` mit Kurve, Link von der Produktseite. Ohne Key: ehrlicher Hinweis, keine Beispieldaten. Keine neue Migration.
+- Phase 3b (PR #2, gemergt): Google Trends über DataForSEO Live, Zwischenspeicher 24 h in `trend_series`, Tageslimit `DATAFORSEO_DAILY_LIMIT` (Standard 30), Seite `/google-trends` mit Kurve, Link von der Produktseite. Ohne Key: ehrlicher Hinweis, keine Beispieldaten. Keine neue Migration.
 
 ## Wichtige Dateien
 - `src/lib/profit.ts`, `offers.ts`, `platforms.ts`, `assessment.ts` (Logik, mit Tests)
@@ -30,8 +30,8 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - `supabase/migrations/*`
 
 ## Offene Punkte
-- Nutzer: PR Phase 3b mergen, DataForSEO-Konto eröffnen (README „Google Trends“), Supabase-Projekt anlegen und Migrationen 0001 und 0002 ausführen, Vercel mit Umgebungsvariablen einrichten (README).
+- Nutzer: DataForSEO-Konto eröffnen (README „Google Trends“), Supabase-Projekt anlegen und Migrationen 0001 und 0002 ausführen, Vercel mit Umgebungsvariablen einrichten (README).
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, Meta-Entwicklerkonto, CJdropshipping.
 
 ## Nächster Schritt
-Mit echtem Key prüfen, ob die Antwort von DataForSEO wie erwartet ausgelesen wird (bisher nur gegen Doku getestet). Später: verwandte/steigende Suchanfragen (eigene Abfrage, kostet extra), Standard-Modus (0.0027 USD) für die tägliche Recherche. Danach Meta Ad Spy, CJdropshipping-API für Angebote, KI-Analyse, Dashboard.
+Phase 3c: Meta Ad Spy über die Meta Ad Library API (gratis, braucht Meta-Entwicklerkonto; ohne Token bauen wie bei Trends). Sobald DataForSEO-Key da ist: prüfen, ob die Antwort von DataForSEO wie erwartet ausgelesen wird (bisher nur gegen Doku getestet). Später: verwandte/steigende Suchanfragen (eigene Abfrage, kostet extra), Standard-Modus (0.0027 USD) für die tägliche Recherche. Danach CJdropshipping-API für Angebote, KI-Analyse, Dashboard.
