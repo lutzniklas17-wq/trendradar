@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Produkte-Bibliothek + Start-Dashboard, auf Basis Minea-Layout)_
+_Zuletzt aktualisiert: 26.11.2026 (Produkte-Bibliothek + Start-Dashboard, Minea-Layout Teil 2 gemergt)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -58,6 +58,12 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - TikTok-Tab `/ad-spy/tiktok`: ehrlich „nicht verfügbar“ (Commercial Content API nur Forschung/EU), Link zur offiziellen Bibliothek.
   - Repo design-system-extractor nicht genutzt: zieht Farben/Schriften einer Seite; Minea-Look soll nicht übernommen werden und die App braucht Login.
   - Nicht machbar ohne Erfinden: CTA-Text, Ziel-URL, Ausgaben, Seiten-Erstelldatum, Umsatz, Besucherzahlen, Produktbilder aus Anzeigen.
+- Layout Minea-Stil Teil 2 (gleicher Branch/PR #11):
+  - `FilterBar` hat `groups` (aufklappbares Panel „Weitere Filter“ in Gruppen, offen wenn ein Gruppenfilter aktiv ist). Neu `src/components/ui/quick-chips.tsx` (Schnellfilter-Chips). Rangliste und Shop Spy nutzen beides.
+  - Live-Suche zeigt gespeicherte Treffer als Anzeigen-Karten (`AdLookup.ids` = Meta-ID → interne ID), nicht gespeicherte als Zeile.
+  - Shop Spy: Tabelle ersetzt durch `src/components/shops/shop-row.tsx` (Verlaufslinie 60 Tage über `src/lib/sparkline.ts`, Kennzahlen). `src/lib/shops/list-href.ts` für Chips.
+  - `src/components/library/product-row.tsx`: Produktzeile (Bild | Titel, Datum, Einkaufspreis, Link | Lieferant: von Shops übernommen, Gratisversand, Video | Anzeigen). Startseite-Tab Produkte nutzt sie. **Abgesprochen mit Produkte-Thread (PR #10):** Darstellung der Produktliste gehört diesem Thread; `/produkte` wird erst nach Merge von #10 auf Zeilen umgestellt. Reihenfolge: PR #11 vor PR #10 mergen (PR #10 enthält #11 bereits).
+  - Navigation: Trend Spy heisst wieder „Trend Spy“; „Produkte“ ist `/produkte` aus PR #10.
 - Quellen geprüft 26.11.2026: Kickstarter/Indiegogo ohne offene API (nur Links). SHAB-API (amtsblattportal.ch, Neueintragungen HR01) existiert, Doku per robots gesperrt und kein Netz in der Sandbox → nicht gebaut, erst mit echtem Test.
 - Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
@@ -90,4 +96,4 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-PR 11 (Layout) zuerst mergen, dann PR 10 (Produkte + Dashboard, nach Migration 0008), dann mit echtem CJ-Key prüfen. Danach: KI auch für unklare Startup-Relevanz und Future-Radar; Layout Teil 2 (Live-Suche und Shop Spy als Karten, Filterpanel in Gruppen); optional SHAB-Neueintragungen.
+PR #11 mergen, dann PR #10 (nach Migration 0008), dann mit echtem CJ-Key prüfen. Danach `/produkte` auf `ProductRow` und Filterpanel umstellen (Layout-Thread). KI auch für unklare Startup-Relevanz und Future-Radar; Meta-Vorschau mit echtem Token prüfen; optional SHAB-Neueintragungen.

@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Store, TrendingDown, TrendingUp } from "lucide-react";
+import { Store } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader, Notice } from "@/components/ui/card";
-import { Badge, ProvenanceBadge } from "@/components/ui/badge";
+import { ProvenanceBadge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
 import { filterShops, hasShopFilters, parseShopFilters, resultLabel, SHOP_SIGNALS, SHOP_SORTS } from "@/lib/list-filters";
 import { getMetaEnv } from "@/lib/env";
-import { dayDaysAgo, formatCount, shopTrend, sortedDomains, zurichDay, type Snapshot } from "@/lib/shops/shops";
-import { FavoriteShopButton } from "@/components/shops/favorite-shop-button";
+import { dayDaysAgo, shopTrend, sortedDomains, zurichDay, type Snapshot } from "@/lib/shops/shops";
+import { ShopRow } from "@/components/shops/shop-row";
+import { QuickChips } from "@/components/ui/quick-chips";
+import { shopListHref } from "@/lib/shops/list-href";
 import { refreshAllShops, trackShop } from "./actions";
 import { inputClass } from "@/components/ui/field";
 
@@ -140,56 +142,33 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
                 { kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: SHOP_SORTS },
               ]}
             />
+            <QuickChips
+              items={[
+                { label: "Skaliert gerade", href: shopListHref(filters, { signal: "skaliert", sort: "veraenderung" }), active: filters.signal === "skaliert" },
+                { label: "Meiste neue Anzeigen", href: shopListHref(filters, { signal: "", sort: "neu" }), active: !filters.signal && filters.sort === "neu" },
+                { label: "Stark rückläufig", href: shopListHref(filters, { signal: "ruecklaeufig", sort: "" }), active: filters.signal === "ruecklaeufig" },
+                { label: "Noch nicht gezählt", href: shopListHref(filters, { signal: "ungezaehlt", sort: "" }), active: filters.signal === "ungezaehlt" },
+              ]}
+            />
             {visibleShops.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted">
-                    <tr className="border-b border-border">
-                      <th className="px-5 py-2 font-medium">Shop</th>
-                      <th className="px-3 py-2 text-right font-medium">Aktive Anzeigen</th>
-                      <th className="px-3 py-2 text-right font-medium">vs. 7 Tage</th>
-                      <th className="px-3 py-2 text-right font-medium">Neu (7 Tage)</th>
-                      <th className="px-3 py-2 font-medium">Hauptdomain</th>
-                      <th className="px-5 py-2 font-medium">Gezählt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {visibleShops.map((s) => {
-                      const t = s.trend;
-                      const main = s.domain;
-                      return (
-                        <tr key={s.id}>
-                          <td className="px-5 py-3">
-                            <FavoriteShopButton id={s.id} favorite={Boolean(s.favorite)} />{" "}
-                            <Link href={`/shop-spy/${s.id}`} className="font-medium hover:text-accent">
-                              {s.name}
-                            </Link>
-                            {t?.scaling ? (
-                              <Badge tone="accent" className="ml-2" title="Mindestens verdoppelt und mindestens 5 Anzeigen mehr als vor 7 Tagen">
-                                <TrendingUp className="size-3" /> Signal: skaliert
-                              </Badge>
-                            ) : t?.dropping ? (
-                              <Badge tone="warning" className="ml-2" title="Mindestens halbiert gegenüber vor 7 Tagen">
-                                <TrendingDown className="size-3" /> stark rückläufig
-                              </Badge>
-                            ) : null}
-                            {s.last_error ? <p className="mt-1 text-xs text-warning">{s.last_error}</p> : null}
-                          </td>
-                          <td className="px-3 py-3 text-right font-medium tabular-nums">{t ? formatCount(t.latest.activeAds, t.latest.capped) : "–"}</td>
-                          <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums text-muted">
-                            {t?.delta === null || t?.delta === undefined ? "noch kein Vergleich" : `${t.delta > 0 ? "+" : ""}${t.delta}`}
-                          </td>
-                          <td className="px-3 py-3 text-right tabular-nums text-muted">{s.latestRow?.new_ads ?? "–"}</td>
-                          <td className="px-3 py-3 text-muted">{main ?? "–"}</td>
-                          <td className="px-5 py-3 text-xs text-muted">
-                            {s.last_checked_at ? new Date(s.last_checked_at).toLocaleString("de-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" }) : "noch nie"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <ul className="divide-y divide-border">
+                {visibleShops.map((s) => (
+                  <ShopRow
+                    key={s.id}
+                    shop={{
+                      id: s.id,
+                      name: s.name,
+                      favorite: s.favorite,
+                      domain: s.domain,
+                      last_checked_at: s.last_checked_at,
+                      last_error: s.last_error,
+                      trend: s.trend,
+                      newAds: s.newAds,
+                      series: [...s.shop_snapshots].sort((x, y) => x.day.localeCompare(y.day)).map((x) => x.active_ads),
+                    }}
+                  />
+                ))}
+              </ul>
             ) : (
               <EmptyState icon={Store} title="Keine Shops für diese Filter">
                 Filter lockern oder zurücksetzen.

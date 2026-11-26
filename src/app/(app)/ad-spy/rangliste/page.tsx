@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { QuickChips } from "@/components/ui/quick-chips";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
 import { AdCard, AdGrid } from "@/components/ads/ad-card";
@@ -22,7 +23,6 @@ import {
   rankAdvertisers,
   rankHref,
 } from "@/lib/ads/rankings";
-import { cn } from "@/lib/utils";
 import { trackShop } from "../../shop-spy/actions";
 
 export const metadata: Metadata = { title: "Ad Spy Rangliste" };
@@ -72,29 +72,30 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
           controls={[
             { kind: "select", name: "sortierung", label: "Sortierung", value: sortValue, options: sorts },
             { kind: "select", name: "zeitraum", label: "Aktiv gesehen", value: String(f.days), options: RANK_WINDOWS },
-            { kind: "select", name: "land", label: "Land", value: f.country ?? "", options: [{ value: "", label: "Alle Länder" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: "EU", label: "EU gesamt (Shop-Zählung)" }] },
-            { kind: "select", name: "plattform", label: "Plattform", value: f.platform ?? "", options: RANK_PLATFORMS },
-            { kind: "select", name: "stichwort", label: "Stichwort", value: f.termId ?? "", options: [{ value: "", label: "Alle Stichwörter" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))] },
+          ]}
+          groups={[
+            {
+              title: "Ort",
+              controls: [
+                { kind: "select", name: "land", label: "Land", value: f.country ?? "", options: [{ value: "", label: "Alle Länder" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: "EU", label: "EU gesamt (Shop-Zählung)" }] },
+              ],
+            },
+            { title: "Plattform", controls: [{ kind: "select", name: "plattform", label: "Plattform", value: f.platform ?? "", options: RANK_PLATFORMS }] },
+            {
+              title: "Quelle",
+              controls: [{ kind: "select", name: "stichwort", label: "Stichwort", value: f.termId ?? "", options: [{ value: "", label: "Alle Stichwörter" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))] }],
+            },
           ]}
         />
-        <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3 text-xs">
-          <span className="self-center text-[12px] text-muted">Schnellwahl</span>
-          <QuickLink href={rankHref(f, { view: "werbetreibende", sort: "active" })} active={view === "werbetreibende" && f.sort === "active"}>
-            Meiste aktive Anzeigen jetzt
-          </QuickLink>
-          <QuickLink href={rankHref(f, { view: "werbetreibende", sort: "new" })} active={view === "werbetreibende" && f.sort === "new"}>
-            Skaliert gerade (neue Anzeigen)
-          </QuickLink>
-          <QuickLink href={rankHref(f, { view: "anzeigen", sort: "longest" })} active={view === "anzeigen" && !advertiserParam && f.sort === "longest"}>
-            Längste Laufzeit
-          </QuickLink>
-          <QuickLink href={rankHref(f, { view: "anzeigen", sort: "newest" })} active={view === "anzeigen" && !advertiserParam && f.sort === "newest"}>
-            Neueste Anzeigen
-          </QuickLink>
-          <QuickLink href={rankHref(f, { view: "anzeigen", sort: "reach" })} active={view === "anzeigen" && !advertiserParam && f.sort === "reach"}>
-            Grösste EU-Reichweite
-          </QuickLink>
-        </div>
+        <QuickChips
+          items={[
+            { label: "Meiste aktive Anzeigen", href: rankHref(f, { view: "werbetreibende", sort: "active" }), active: view === "werbetreibende" && f.sort === "active" },
+            { label: "Skaliert gerade", href: rankHref(f, { view: "werbetreibende", sort: "new" }), active: view === "werbetreibende" && f.sort === "new", title: "Meiste neue Anzeigen in 7 Tagen" },
+            { label: "Längste Laufzeit", href: rankHref(f, { view: "anzeigen", sort: "longest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "longest" },
+            { label: "Neueste Anzeigen", href: rankHref(f, { view: "anzeigen", sort: "newest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "newest" },
+            { label: "Grösste EU-Reichweite", href: rankHref(f, { view: "anzeigen", sort: "reach" }), active: view === "anzeigen" && !advertiserParam && f.sort === "reach" },
+          ]}
+        />
       </Card>
 
       {error ? (
@@ -219,21 +220,5 @@ function NoData() {
       </Link>
       ) oder du im Ad Spy mit Status „Aktiv“ suchst. Ohne Meta-Token bleibt sie leer; es werden keine Beispieldaten gezeigt.
     </EmptyState>
-  );
-}
-
-function QuickLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors duration-150",
-        active ? "border-accent/30 bg-accent-soft font-medium text-accent" : "border-dashed border-border text-muted hover:border-border-strong hover:text-foreground",
-      )}
-    >
-      <span className={cn("size-1.5 rounded-full", active ? "bg-accent" : "bg-subtle")} aria-hidden />
-      {children}
-    </Link>
   );
 }
