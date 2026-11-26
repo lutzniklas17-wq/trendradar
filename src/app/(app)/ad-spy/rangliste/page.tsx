@@ -7,8 +7,11 @@ import { Badge, ProvenanceBadge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
+import { AdCard, AdGrid } from "@/components/ads/ad-card";
+import { loadAdCards } from "@/lib/ads/feed";
+import { getMetaEnv } from "@/lib/env";
 import { requireOwner } from "@/lib/auth";
-import { AD_COUNTRIES, libraryPageUrl, libraryUrl, LONG_RUNNING_DAYS } from "@/lib/ads/meta";
+import { AD_COUNTRIES, libraryPageUrl, LONG_RUNNING_DAYS } from "@/lib/ads/meta";
 import {
   AD_SORTS,
   ADVERTISER_SORTS,
@@ -25,7 +28,6 @@ import { trackShop } from "../../shop-spy/actions";
 export const metadata: Metadata = { title: "Ad Spy Rangliste" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const dateFmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" }) : "unbekannt");
 const platformLabel = (p: string) => p.charAt(0) + p.slice(1).toLowerCase().replace("_", " ");
 
 export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy/rangliste">) {
@@ -46,6 +48,10 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
     view === "anzeigen" ? rankAds(supabase, { ...f, sort: sortValue, advertiserId: advertiserParam }) : Promise.resolve(null),
   ]);
   const error = advertisers?.error ?? ads?.error ?? null;
+  const canEmbed = Boolean(getMetaEnv());
+  const { cards: adCards } = ads
+    ? await loadAdCards(supabase, ads.rows.map((r) => r.id), new Map(ads.rows.map((r) => [r.id, r.countries])))
+    : { cards: [] };
   const advertiserName = advertiserParam ? (ads?.rows[0]?.advertiser_name ?? "Werbetreibender") : null;
   const windowLabel = RANK_WINDOWS.find((w) => w.value === String(f.days))?.label ?? "";
 
@@ -72,7 +78,7 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
           ]}
         />
         <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3 text-xs">
-          <span className="self-center text-muted">Schnellwahl:</span>
+          <span className="self-center text-[12px] text-muted">Schnellwahl</span>
           <QuickLink href={rankHref(f, { view: "werbetreibende", sort: "active" })} active={view === "werbetreibende" && f.sort === "active"}>
             Meiste aktive Anzeigen jetzt
           </QuickLink>
@@ -84,6 +90,9 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
           </QuickLink>
           <QuickLink href={rankHref(f, { view: "anzeigen", sort: "newest" })} active={view === "anzeigen" && !advertiserParam && f.sort === "newest"}>
             Neueste Anzeigen
+          </QuickLink>
+          <QuickLink href={rankHref(f, { view: "anzeigen", sort: "reach" })} active={view === "anzeigen" && !advertiserParam && f.sort === "reach"}>
+            Grösste EU-Reichweite
           </QuickLink>
         </div>
       </Card>
@@ -166,59 +175,36 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
       ) : null}
 
       {ads ? (
-        <Card>
-          <CardHeader
-            title={advertiserName ? `Aktive Anzeigen von ${advertiserName}` : `Anzeigen · ${AD_SORTS.find((s) => s.value === f.sort)?.label ?? "Längste Laufzeit"}`}
-            description={`Aktiv gesehen: ${windowLabel}${f.country ? ` · ${f.country}` : ""}${f.platform ? ` · ${platformLabel(f.platform)}` : ""}${termLabel ? ` · Stichwort „${termLabel.term}“` : ""}.`}
-            action={
-              advertiserParam ? (
-                <Link href={rankHref(f, { view: "werbetreibende", sort: "active" })} className="text-xs font-medium text-accent hover:underline">
-                  ← zur Rangliste
-                </Link>
-              ) : (
-                <ProvenanceBadge kind="data" />
-              )
-            }
-          />
-          {ads.rows.length ? (
-            <ul className="divide-y divide-border">
-              {ads.rows.map((ad) => (
-                <li key={ad.id} className="space-y-2 px-5 py-4 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    {ad.advertiser_id ? (
-                      <Link href={`/ad-spy/rangliste?${new URLSearchParams({ werbetreibender: ad.advertiser_id, zeitraum: String(f.days) })}`} className="font-medium hover:text-accent">
-                        {ad.advertiser_name ?? "Unbekannte Seite"}
-                      </Link>
-                    ) : (
-                      <span className="font-medium">{ad.advertiser_name ?? "Unbekannte Seite"}</span>
-                    )}
-                    <span className="flex flex-wrap items-center gap-2">
-                      {(ad.publisher_platforms ?? []).map((p) => (
-                        <Badge key={p}>{platformLabel(p)}</Badge>
-                      ))}
-                      {ad.running_days !== null && ad.running_days >= LONG_RUNNING_DAYS ? <Badge tone="accent">Signal: lange Laufzeit</Badge> : null}
-                    </span>
-                  </div>
-                  {ad.title ? <p className="font-medium">{ad.title}</p> : null}
-                  {ad.body ? <p className="line-clamp-3 whitespace-pre-line text-muted">{ad.body}</p> : <p className="text-muted italic">Kein Anzeigentext gespeichert.</p>}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span>
-                      Start {dateFmt(ad.started_at)}
-                      {ad.running_days !== null ? ` · ${ad.running_days} Tage` : ""}
-                    </span>
-                    <span>Zuletzt aktiv gesehen {ad.last_seen ? new Date(`${ad.last_seen}T12:00:00Z`).toLocaleDateString("de-CH") : "–"} in {(ad.countries ?? []).join(", ")}</span>
-                    {ad.eu_reach !== null ? <span>Reichweite EU {ad.eu_reach.toLocaleString("de-CH")}</span> : null}
-                    <a href={libraryUrl(ad.external_id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
-                      Anzeige ansehen <ExternalLink className="size-3" />
-                    </a>
-                  </div>
-                </li>
+        <section>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-medium">
+                {advertiserName ? `Anzeigen von ${advertiserName}` : `Anzeigen · ${AD_SORTS.find((s) => s.value === sortValue)?.label ?? "Längste Laufzeit"}`}
+              </h2>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {`Aktiv gesehen: ${windowLabel}${f.country ? ` · ${f.country}` : ""}${f.platform ? ` · ${platformLabel(f.platform)}` : ""}${termLabel ? ` · Stichwort „${termLabel.term}“` : ""}.`}
+              </p>
+            </div>
+            {advertiserParam ? (
+              <Link href={rankHref(f, { view: "werbetreibende", sort: "active" })} className="text-[13px] text-accent hover:underline">
+                ← zur Rangliste
+              </Link>
+            ) : (
+              <ProvenanceBadge kind="data" />
+            )}
+          </div>
+          {adCards.length ? (
+            <AdGrid>
+              {adCards.map((ad) => (
+                <AdCard key={ad.id} ad={ad} canEmbed={canEmbed} />
               ))}
-            </ul>
+            </AdGrid>
           ) : (
-            <NoData />
+            <Card>
+              <NoData />
+            </Card>
           )}
-        </Card>
+        </section>
       ) : null}
     </>
   );
@@ -238,7 +224,15 @@ function NoData() {
 
 function QuickLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
-    <Link href={href} className={cn("rounded-md border px-3 py-1 font-medium", active ? "border-accent bg-accent text-white" : "border-border text-muted hover:text-foreground")}>
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors duration-150",
+        active ? "border-accent/30 bg-accent-soft font-medium text-accent" : "border-dashed border-border text-muted hover:border-border-strong hover:text-foreground",
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", active ? "bg-accent" : "bg-subtle")} aria-hidden />
       {children}
     </Link>
   );

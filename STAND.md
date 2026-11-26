@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Produkte: Lieferanten-Bibliothek, Top-Hits, KI-Vorbereitung)_
+_Zuletzt aktualisiert: 26.11.2026 (Produkte-Bibliothek + Start-Dashboard, auf Basis Minea-Layout)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -48,6 +48,15 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - KI (`src/lib/ai/`): `@anthropic-ai/sdk`, Modell `claude-haiku-5-5` (0.10/0.50 USD pro Mio. Tokens), `messages.parse` mit Zod-Schema, effort low, 20 Produkte pro Anfrage, max. 100 pro Tag, Budget `AI_MONTHLY_BUDGET_USD` (Standard 5) / 30 pro Tag, Kosten in `api_usage`. Ohne `ANTHROPIC_API_KEY` aus. Entscheidung: keine Batch-API, weil die Ersparnis bei diesem Volumen Cents sind und Batch einen zweiten Abhol-Lauf braucht; Caching greift erst ab ca. 1–4k Tokens Prefix, der Systemprompt ist kürzer.
   - Datensammler-Seite: Karten „Produkt-Bibliothek“ und „KI-Bewertung“ mit „Jetzt …“-Knopf.
   - Anleitung für Nutzer: Projektdateien `anleitungen/cj-und-claude-zugang.md`.
+- Layout Minea-Stil Teil 1 (Branch `claude/project-thread-hrpdjy`, PR offen, keine Migration). Vorlage: Screenshots in Projektdateien `design/minea/`. Eigener Look nach Design-Regeln, keine Minea-Farben/Texte.
+  - Sidebar in Gruppen „Entdecken / Recherche / Werkzeuge“ (`src/lib/navigation.ts`, `group`, `match`, `isNavActive`). „Dashboard“ heisst „Start“, Ad Spy öffnet die Anzeigen-Ansicht.
+  - Startseite `/`: „Top 10 des Tages“ mit Tagesauswahl (10 Tage, URL `tag`, `ansicht`), Tabs Anzeigen (an dem Tag aktiv gesehen, nach EU-Reichweite), Shops (Shop-Zählung des Tages), Produkte (an dem Tag aufgenommen, Anzeigen über Produkt-Stichwörter). Logik `src/lib/ads/feed.ts` mit Tests.
+  - Anzeigen-Karte `src/components/ads/ad-card.tsx` (Werbetreibender mit laufend/bekannt, Laufzeit, Start → heute, Länder, Reichweite, Plattformen, Vorschau, Shop-Domain, „Anzeige analysieren“). Rangliste „Einzelne Anzeigen“ nutzt das Kartenraster, Schnellwahl-Chips inkl. „Grösste EU-Reichweite“.
+  - Video/Bild: Meta liefert keine Mediendateien. Vorschau = offizielle Meta-Seite `render_ad` (wie `ad_snapshot_url`) im iframe über `/api/ads/[id]/vorschau` (nur für Besitzer, leitet mit Token weiter). **Entscheidung geändert:** Das Token erscheint dabei im Browser des Besitzers. Nicht mit echtem Token getestet; ob Meta die Einbettung erlaubt, ist offen. Fallback-Link zur Ad Library.
+  - Anzeigen-Detail `/ad-spy/anzeige/[id]`: grosse Vorschau, Fakten, Stichwörter, Shop-Info (aktive EU-Anzeigen aus Shop-Zählung, bekannte Anzeigen, Summe EU-Reichweite, älteste bekannte Anzeige, Ausgaben „nicht verfügbar“), „Shop verfolgen“, Tabs „Anzeigen dieses Shops“ / „Ähnliche Anzeigen anderer Shops“ (gleiches Stichwort).
+  - TikTok-Tab `/ad-spy/tiktok`: ehrlich „nicht verfügbar“ (Commercial Content API nur Forschung/EU), Link zur offiziellen Bibliothek.
+  - Repo design-system-extractor nicht genutzt: zieht Farben/Schriften einer Seite; Minea-Look soll nicht übernommen werden und die App braucht Login.
+  - Nicht machbar ohne Erfinden: CTA-Text, Ziel-URL, Ausgaben, Seiten-Erstelldatum, Umsatz, Besucherzahlen, Produktbilder aus Anzeigen.
 - Quellen geprüft 26.11.2026: Kickstarter/Indiegogo ohne offene API (nur Links). SHAB-API (amtsblattportal.ch, Neueintragungen HR01) existiert, Doku per robots gesperrt und kein Netz in der Sandbox → nicht gebaut, erst mit echtem Test.
 - Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
@@ -80,4 +89,4 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-Phase 6a mergen (nach Migration 0008) und mit echtem CJ-Key prüfen. Danach: Dashboard-Startseite mit allem Neuen auf einen Blick (neue Top-Hits, Inbox, Startups, News, Läufe); KI auch für unklare Startup-Relevanz und Future-Radar; optional SHAB-Neueintragungen.
+PR 11 (Layout) zuerst mergen, dann PR 10 (Produkte + Dashboard, nach Migration 0008), dann mit echtem CJ-Key prüfen. Danach: KI auch für unklare Startup-Relevanz und Future-Radar; Layout Teil 2 (Live-Suche und Shop Spy als Karten, Filterpanel in Gruppen); optional SHAB-Neueintragungen.
