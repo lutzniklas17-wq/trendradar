@@ -187,13 +187,14 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
           title="Messwerte"
           description="Neuester Wert je Kennzahl, mit Quelle."
           action={
-            <Link
-              href={`/google-trends?q=${encodeURIComponent(item.name)}`}
-              prefetch={false}
-              className="shrink-0 text-sm text-accent hover:underline"
-            >
-              Google Trends
-            </Link>
+            <span className="flex shrink-0 gap-3">
+              <Link href={`/google-trends?q=${encodeURIComponent(item.name)}`} prefetch={false} className="text-sm text-accent hover:underline">
+                Google Trends
+              </Link>
+              <Link href={`/ad-spy?q=${encodeURIComponent(item.name.slice(0, 100))}`} prefetch={false} className="text-sm text-accent hover:underline">
+                Ad Spy
+              </Link>
+            </span>
           }
         />
         {latestSignals.size ? (

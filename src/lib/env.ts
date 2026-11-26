@@ -19,3 +19,11 @@ export function getDataForSeoEnv() {
 export function getAllowedEmail() {
   return process.env.ALLOWED_EMAIL?.trim().toLowerCase() || null;
 }
+
+/** Zugang zur Meta Ad Library API. Nur serverseitig lesen, das Token nie an den Browser geben. */
+export function getMetaEnv() {
+  const accessToken = process.env.META_ACCESS_TOKEN?.trim();
+  if (!accessToken) return null;
+  const version = process.env.META_GRAPH_VERSION?.trim();
+  return { accessToken, graphVersion: version && /^v\d+\.\d+$/.test(version) ? version : undefined };
+}
