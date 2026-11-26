@@ -39,3 +39,9 @@ export function getCronEnv() {
   if (!secret || secret.length < 16 || !serviceRoleKey || !url) return null;
   return { secret, serviceRoleKey, url };
 }
+
+/** Developer Token der Product Hunt API v2 (kostenlos, nur private, nicht kommerzielle Nutzung). Nur serverseitig lesen. */
+export function getProductHuntEnv() {
+  const token = process.env.PRODUCTHUNT_TOKEN?.trim();
+  return token ? { token } : null;
+}

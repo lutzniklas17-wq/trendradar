@@ -1,10 +1,13 @@
 import {
   Bookmark,
+  Bot,
   Calculator,
   Flame,
+  Inbox,
   LayoutDashboard,
   LineChart,
   Megaphone,
+  Newspaper,
   Radar,
   Rocket,
   Search,
@@ -16,6 +19,8 @@ export type NavItem = { href: string; label: string; icon: LucideIcon; descripti
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, description: "Neue Entdeckungen auf einen Blick" },
+  { href: "/inbox", label: "Inbox", icon: Inbox, description: "Was sich bei den täglichen Updates geändert hat" },
+  { href: "/news", label: "Daily News", icon: Newspaper, description: "E-Commerce-News aus deinen Feeds" },
   { href: "/suche", label: "Suche", icon: Search, description: "Alles zu einem Begriff aus allen Bereichen" },
   { href: "/trend-spy", label: "Trend Spy", icon: Flame, description: "Was gerade an Aufmerksamkeit gewinnt" },
   { href: "/ad-spy", label: "Ad Spy", icon: Megaphone, description: "Anzeigen aus offiziellen Werbebibliotheken" },
@@ -23,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/google-trends", label: "Google Trends", icon: LineChart, description: "Suchinteresse, Regionen, steigende Suchanfragen" },
   { href: "/startup-spy", label: "Startup Spy", icon: Rocket, description: "Neue Marken, Start-ups und Produktlaunches" },
   { href: "/future-radar", label: "Future Radar", icon: Radar, description: "Produkte mit möglichem Zukunftspotenzial" },
-  { href: "/watchlist", label: "Watchlist", icon: Bookmark, description: "Gespeicherte Produkte, Marken und Trends" },
+  { href: "/watchlist", label: "Favoriten", icon: Bookmark, description: "Gespeicherte Produkte und Shops" },
+  { href: "/sammler", label: "Datensammler", icon: Bot, description: "Tägliche Bots, Stichwörter und Feeds" },
   { href: "/rechner", label: "Profit-Rechner", icon: Calculator, description: "Gewinn und Szenarien kalkulieren" },
 ];

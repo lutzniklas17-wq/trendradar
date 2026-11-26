@@ -7,6 +7,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Tabs } from "@/components/ui/tabs";
+import { MarketSection } from "@/components/product/market-section";
+import { loadProductAds } from "@/lib/links";
 import { ProfitCalculator, type ProvenanceMap, type ScenarioState } from "@/components/profit/profit-calculator";
 import { SupplierSection } from "@/components/product/supplier-section";
 import { SalesChannels } from "@/components/product/sales-channels";
@@ -67,7 +69,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
   if (!loaded) notFound();
   const { supabase, item } = loaded;
 
-  const [offersRes, watchRes, assessmentRes, calcRes, signalsRes] = await Promise.all([
+  const [offersRes, watchRes, assessmentRes, calcRes, signalsRes, market, trendRes] = await Promise.all([
     supabase.from("product_offers").select(OFFER_COLUMNS).eq("item_id", id).order("fetched_at", { ascending: false }),
     supabase.from("watchlist").select("item_id").eq("item_id", id).maybeSingle(),
     supabase
@@ -84,6 +86,14 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
       .eq("item_id", id)
       .order("observed_at", { ascending: false })
       .limit(100),
+    loadProductAds(supabase, item),
+    supabase
+      .from("trend_series")
+      .select("fetched_at")
+      .contains("keywords", [item.name])
+      .order("fetched_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const offers = ((offersRes.data ?? []) as OfferRow[]).map(fromRow);
@@ -286,6 +296,20 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
             label: "Lieferanten",
             count: supplierOffers.length,
             content: <SupplierSection itemId={item.id} query={item.name} offers={offers} />,
+          },
+          {
+            id: "markt",
+            label: "Anzeigen & Trends",
+            count: market.advertisers.length || undefined,
+            content: (
+              <MarketSection
+                item={item}
+                terms={market.terms}
+                ads={market.ads}
+                advertisers={market.advertisers}
+                trendFetchedAt={(trendRes.data?.fetched_at as string | undefined) ?? null}
+              />
+            ),
           },
           { id: "verkaufskanaele", label: "Verkaufskanäle", content: <SalesChannels query={item.name} /> },
           { id: "rechner", label: "Profit-Rechner", content: calculator },

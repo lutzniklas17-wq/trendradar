@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { Bookmark } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { Card, CardHeader } from "@/components/ui/card";
+import { FavoriteShopButton } from "@/components/shops/favorite-shop-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { ItemList, type ItemListEntry } from "@/components/product/item-list";
 import { requireOwner } from "@/lib/auth";
 import { AREA_OPTIONS, categoryOptions, filterItems, hasItemFilters, ITEM_PERIODS, parseItemFilters, resultLabel } from "@/lib/list-filters";
 
-export const metadata: Metadata = { title: "Watchlist" };
+export const metadata: Metadata = { title: "Favoriten" };
 
 type Row = { note: string | null; added_at: string; items: Omit<ItemListEntry, "note"> | null };
 
@@ -31,10 +33,31 @@ export default async function WatchlistPage({ searchParams }: PageProps<"/watchl
     .filter((r) => r.items)
     .map((r) => ({ ...r.items!, note: r.note, date: r.added_at }));
   const items = filterItems(all, filters);
+  // Favorisierte Shops (Migration 0006). Ohne Migration bleibt die Liste einfach leer.
+  const shopsRes = await supabase.from("tracked_shops").select("id, name, last_checked_at").eq("favorite", true).order("name");
+  const favShops = (shopsRes.data ?? []) as { id: string; name: string; last_checked_at: string | null }[];
 
   return (
     <>
-      <PageHeader title="Watchlist" description="Gespeicherte Produkte, Marken und Trends zum Beobachten und Vergleichen." />
+      <PageHeader
+        title="Favoriten"
+        description="Gemerkte Produkte, Marken, Trends und Shops. Die täglichen Updates ändern oder löschen sie nie; Änderungen an Favoriten stehen in der Inbox oben."
+      />
+      {favShops.length ? (
+        <Card className="mb-6">
+          <CardHeader title={`${favShops.length} favorisierte Shops`} description="Jede Veränderung der aktiven Anzeigen wird in der Inbox gemeldet." />
+          <ul className="divide-y divide-border border-t border-border text-sm">
+            {favShops.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                <Link href={`/shop-spy/${s.id}`} className="font-medium hover:text-accent">
+                  {s.name}
+                </Link>
+                <FavoriteShopButton id={s.id} favorite />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
       <Card>
         {all.length ? (
           <FilterBar
@@ -63,7 +86,7 @@ export default async function WatchlistPage({ searchParams }: PageProps<"/watchl
           </EmptyState>
         ) : (
           <EmptyState icon={Bookmark} title="Noch nichts gespeichert">
-            Über „Zur Watchlist“ auf jeder Produktseite landet ein Eintrag hier.
+            Über „Zur Watchlist“ auf jeder Produktseite landet ein Produkt hier, über den Stern im Shop Spy ein Shop.
           </EmptyState>
         )}
       </Card>

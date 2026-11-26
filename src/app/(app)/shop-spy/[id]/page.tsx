@@ -12,6 +12,8 @@ import { getMetaEnv } from "@/lib/env";
 import { libraryPageUrl, PAGE_ADS_LIMIT } from "@/lib/ads/meta";
 import { formatCount, MAX_PAGES_PER_SHOP, shopTrend, sortedDomains } from "@/lib/shops/shops";
 import { refreshShop, removeShop } from "../actions";
+import { FavoriteShopButton } from "@/components/shops/favorite-shop-button";
+import { loadShopLinks } from "@/lib/links";
 
 export const metadata: Metadata = { title: "Shop" };
 export const maxDuration = 120;
@@ -33,7 +35,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
   const { supabase } = await requireOwner();
   const { data: shop } = await supabase
     .from("tracked_shops")
-    .select("id, page_id, name, created_at, last_checked_at, last_error")
+    .select("*") // enthält favorite ab Migration 0006
     .eq("id", id)
     .maybeSingle();
   if (!shop) notFound();
@@ -49,6 +51,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
   const domains = sortedDomains(latest?.domains ?? {});
   const withoutDomain = latest?.domains?.[""] ?? 0;
   const configured = getMetaEnv() !== null;
+  const links = await loadShopLinks(supabase, shop.page_id);
 
   return (
     <>
@@ -107,6 +110,49 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
 
         <Card>
           <CardHeader
+            title="Anzeigen und Produkte dieses Shops"
+            description="Aus gespeicherten Daten: jede Zählung speichert die aktiven Anzeigen. Produkte erscheinen hier, wenn ein Sammel-Stichwort eines Produkts Anzeigen dieses Shops gefunden hat."
+            action={
+              links.advertiserId ? (
+                <Link href={`/ad-spy/rangliste?werbetreibender=${links.advertiserId}&zeitraum=7`} className="text-sm font-medium text-accent hover:underline">
+                  Alle aktiven Anzeigen →
+                </Link>
+              ) : null
+            }
+          />
+          {links.products.length ? (
+            <div className="border-t border-border px-5 py-3 text-sm">
+              <p className="mb-2 text-xs font-medium text-muted">Verknüpfte Produkte</p>
+              <ul className="flex flex-wrap gap-2">
+                {links.products.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/produkt/${p.id}`} className="rounded-md border border-border px-3 py-1 hover:border-accent hover:text-accent">
+                      {p.name} <span className="text-muted">· {p.ads}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {links.titles.length ? (
+            <div className="border-t border-border px-5 py-3 text-sm">
+              <p className="mb-2 text-xs font-medium text-muted">Häufigste Anzeigentitel (meist der beworbene Produktname) · Signal</p>
+              <ul className="divide-y divide-border">
+                {links.titles.map((t) => (
+                  <li key={t.title} className="flex items-center justify-between gap-3 py-2">
+                    <span>{t.title}</span>
+                    <span className="text-xs text-muted tabular-nums">{t.count} Anzeigen</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="border-t border-border px-5 py-3 text-sm text-muted">Noch keine gespeicherten Anzeigen. Nach der nächsten Zählung erscheinen sie hier.</p>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader
             title="Domains in den aktiven Anzeigen"
             description="Aus der Link-Beschriftung der Anzeigen. Meist die Shop-Domain, aber nicht garantiert; eine echte Landingpage-URL liefert Meta nicht."
           />
@@ -142,6 +188,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
             ) : (
               <span className="text-muted">Meta-API nicht verbunden, Zählen nicht möglich.</span>
             )}
+            <FavoriteShopButton id={shop.id} favorite={Boolean(shop.favorite)} withLabel />
             <a href={libraryPageUrl(shop.page_id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
               Alle Anzeigen in der Ad Library <ExternalLink className="size-3" />
             </a>
