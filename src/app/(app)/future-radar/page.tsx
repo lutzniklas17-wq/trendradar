@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 import { Radar } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { AreaPlaceholder } from "@/components/areas/area-placeholder";
+import { AreaItems } from "@/components/areas/area-items";
 
 export const metadata: Metadata = { title: "Future Radar" };
 
-export default function FutureRadarPage() {
+export default async function FutureRadarPage({ searchParams }: PageProps<"/future-radar">) {
   return (
     <>
       <PageHeader
         title="Future Radar"
-        description="Einschätzungen zu Produkten mit Zukunftspotenzial, getrennt nach Fakten, Signalen und Einschätzung."
+        description="Themen mit möglichem Zukunftspotenzial aus deinen RSS-Feeds. Eine Bewertung nach festen Kriterien folgt mit der KI-Grundlage, klar als Einschätzung markiert."
       />
-      <AreaPlaceholder
+      <AreaItems
+        area="future_radar"
+        path="/future-radar"
         icon={Radar}
-        title="Future Radar startet nach einigen Wochen gesammelter Signale"
-        phase="nach dem MVP"
-        sources={[
-          { name: "Alle Signale aus TrendRadar", note: "Suchtrend, Anzeigen, Launches, Länder" },
-          { name: "Claude", note: "Bewertung nach festen Kriterien, klar als Einschätzung markiert" },
-        ]}
+        title="Gesammelte Themen"
+        description="Titel und Link aus dem Feed. Das sind Signale aus Quellen, keine Bewertung."
+        noun={["Thema", "Themen"]}
+        params={await searchParams}
       />
     </>
   );

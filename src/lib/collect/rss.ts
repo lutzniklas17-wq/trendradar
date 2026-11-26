@@ -116,7 +116,8 @@ export function parseKeywords(raw: string) {
 export function toDiscovery(entry: FeedEntry, feed: { name: string; area: ItemArea }): Discovery {
   return {
     name: entry.title,
-    type: "topic",
+    // Trend Spy listet Produkte, Startup Spy Marken; alles andere sind Themen.
+    type: feed.area === "trend_spy" ? "product" : feed.area === "startup_spy" ? "startup" : "topic",
     area: feed.area,
     sourceId: RSS_SOURCE_ID,
     sourceUrl: entry.link,

@@ -94,6 +94,7 @@ jeder Eintrag speichert Originalquelle und Entdeckungsdatum, Duplikate (gleiche 
 | Anzeigen-Stichwörter | Meta Ad Library API, bis 300 aktive Anzeigen pro Stichwort und Land | 03:00 | Ad Spy, Rangliste |
 | Product Hunt | Product Hunt API v2, Launches der letzten 36 h mit Konsum-Themen | 04:00 | Startup Spy |
 | RSS-Feeds | eigene Liste von RSS/Atom-Feeds, optional mit Stichwortfilter | 04:30 | Trend Spy, Startup Spy oder Future Radar |
+| News | eigene News-Feeds (RSS/Atom, z. B. Google-News-Suchen) | 04:45 | Daily News |
 | Shops | Meta Ad Library API | 05:00 | Shop Spy |
 
 Bewusst **nicht** dabei (Stand 26.11.2026): Reddit (neue API-Zugänge brauchen Freigabe durch Reddit), Kickstarter/Indiegogo, TikTok Creative Center,
@@ -104,7 +105,17 @@ Einrichtung:
 2. `CRON_SECRET` und `SUPABASE_SERVICE_ROLE_KEY` wie unter „Shop Spy“ setzen (falls noch nicht geschehen).
 3. Optional Product Hunt: auf https://www.producthunt.com/v2/oauth/applications eine Anwendung anlegen (Redirect-URI z. B. `https://localhost`),
    dort den **Developer Token** kopieren und in Vercel als `PRODUCTHUNT_TOKEN` eintragen. Kostenlos, laut Product Hunt nur für nicht kommerzielle Nutzung.
-4. Neu deployen. Unter Vercel → Settings → Cron Jobs erscheinen vier tägliche Läufe.
+4. Migrationen `0005_ad_rankings.sql` und `0006_news_inbox.sql` ausführen (Rangliste, News, Inbox, Shop-Favoriten).
+5. Neu deployen. Unter Vercel → Settings → Cron Jobs erscheinen fünf tägliche Läufe.
+
+**Daily News:** Kacheln mit Bild, Titel und Anrisstext aus dem Feed; Klick zeigt den Auszug und den Link zum Originalartikel.
+Volltexte werden nicht kopiert (Urheberrecht), Bilder werden direkt vom Verlag geladen. Google-News-Feeds liefern meist keine Bilder.
+News älter als 30 Tage werden automatisch gelöscht.
+
+**Inbox:** Jeder Lauf schreibt nur dann einen Eintrag, wenn sich etwas geändert hat: neue Launches/Einträge, neue oder beendete Anzeigen
+pro Stichwort, Shops mit deutlicher Veränderung (mind. 3 Anzeigen und 25 %) oder ohne aktive Anzeigen. Favorisierte Shops melden jede Veränderung.
+
+**Favoriten:** Produkte über „Zur Watchlist“, Shops über den Stern. Die täglichen Läufe löschen nie etwas aus den Favoriten.
 
 ## Lokal entwickeln
 

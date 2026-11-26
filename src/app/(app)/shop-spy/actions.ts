@@ -69,3 +69,15 @@ export async function removeShop(form: FormData) {
   revalidatePath("/shop-spy");
   redirect("/shop-spy");
 }
+
+/** Shop als Favorit markieren oder entfernen. Favoriten melden in der Inbox jede Veränderung. */
+export async function toggleFavoriteShop(form: FormData) {
+  const { supabase } = await requireOwner();
+  const id = field(form, "id", 40);
+  if (!UUID.test(id)) return backWithError("Ungültiger Shop.");
+  const { error } = await supabase.from("tracked_shops").update({ favorite: field(form, "favorit", 1) === "1" }).eq("id", id);
+  if (error) return backWithError("Favorit konnte nicht gespeichert werden. Ist die Migration 0006 in Supabase gelaufen?");
+  revalidatePath("/shop-spy");
+  revalidatePath(`/shop-spy/${id}`);
+  revalidatePath("/watchlist");
+}

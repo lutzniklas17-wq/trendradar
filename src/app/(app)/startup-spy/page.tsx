@@ -1,24 +1,22 @@
 import type { Metadata } from "next";
 import { Rocket } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { AreaPlaceholder } from "@/components/areas/area-placeholder";
+import { AreaItems } from "@/components/areas/area-items";
 
 export const metadata: Metadata = { title: "Startup Spy" };
 
-export default function StartupSpyPage() {
+export default async function StartupSpyPage({ searchParams }: PageProps<"/startup-spy">) {
   return (
     <>
-      <PageHeader title="Startup Spy" description="Neue Unternehmen, D2C-Marken und Produktlaunches." />
-      <AreaPlaceholder
+      <PageHeader title="Startup Spy" description="Neue D2C-Marken und Produktlaunches aus Product Hunt und deinen RSS-Feeds." />
+      <AreaItems
+        area="startup_spy"
+        path="/startup-spy"
         icon={Rocket}
-        title="Noch keine Start-ups entdeckt"
-        phase="Phase 4"
-        sources={[
-          { name: "Claude Websuche", note: "Neue Marken und Start-ups mit Quellenangabe" },
-          { name: "Product Hunt API", note: "Tägliche Launches" },
-          { name: "Hacker News API", note: "Show HN" },
-          { name: "RSS-Feeds", note: "Fach- und Innovationsportale" },
-        ]}
+        title="Launches und neue Marken"
+        description="Täglich gesammelt. Product Hunt ist überwiegend Software; gespeichert werden nur Launches mit Konsum-Themen. Grösse und Gründungsdatum liefert die Quelle nicht, „neu“ heisst hier: neu gelauncht."
+        noun={["Eintrag", "Einträge"]}
+        params={await searchParams}
       />
     </>
   );

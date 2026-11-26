@@ -3,7 +3,8 @@ import { Bot, Play, Rss, Tag, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
 import { getMetaEnv, getProductHuntEnv } from "@/lib/env";
@@ -14,7 +15,6 @@ export const metadata: Metadata = { title: "Datensammler" };
 // „Jetzt ausführen“ fragt mehrere Stichwörter oder Feeds nacheinander ab.
 export const maxDuration = 300;
 
-const fieldClass = "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
 const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("de-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" }) : "noch nie";
 
@@ -25,13 +25,13 @@ type Term = { id: string; term: string; country: string; active: boolean; last_r
 type Feed = { id: string; url: string; name: string; area: string; keywords: string[]; last_run_at: string | null; last_count: number | null; last_error: string | null };
 type Run = { id: string; job: string | null; started_at: string; status: string; new_items: number; log: { message?: string } | null };
 
-function RunButton({ job, disabled, label }: { job: string; disabled?: boolean; label: string }) {
+function RunButton({ job, disabled, label, reason }: { job: string; disabled?: boolean; label: string; reason?: string }) {
   return (
     <form action={runCollectorNow}>
       <input type="hidden" name="job" value={job} />
-      <Button type="submit" variant="secondary" disabled={disabled}>
+      <SubmitButton variant="secondary" disabled={disabled} title={disabled ? reason : undefined} pendingLabel="Läuft …">
         <Play className="size-4" /> {label}
-      </Button>
+      </SubmitButton>
     </form>
   );
 }
@@ -76,16 +76,16 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
           <CardHeader
             title="Anzeigen-Stichwörter (Meta Ad Library)"
             description="Jeden Tag um ca. 04:00 werden für jedes Stichwort bis zu 300 aktive Anzeigen im gewählten Land abgefragt. Daraus entsteht die eigene Rangliste im Ad Spy („meiste aktive Anzeigen jetzt“). Kostenlos, aber Meta begrenzt die Abfragen pro Stunde: ca. 20–30 Stichwörter pro Tag sind realistisch."
-            action={<RunButton job="ads" disabled={!meta || !terms.length} label="Jetzt sammeln" />}
+            action={<RunButton job="ads" disabled={!meta || !terms.length} label="Jetzt sammeln" reason={!meta ? "META_ACCESS_TOKEN fehlt" : "Zuerst ein Stichwort hinzufügen"} />}
           />
           <form action={addWatchTerm} className="flex flex-wrap items-end gap-3 border-t border-border p-5">
             <label className="flex min-w-60 flex-1 flex-col gap-1 text-sm">
               <span className="font-medium">Stichwort</span>
-              <input name="begriff" required maxLength={100} className={fieldClass} placeholder="z. B. led maske, hundebett, posture corrector" />
+              <input name="begriff" required maxLength={100} className={inputClass} placeholder="z. B. led maske, hundebett, posture corrector" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Land</span>
-              <select name="land" defaultValue="DE" className={fieldClass}>
+              <select name="land" defaultValue="DE" className={inputClass}>
                 {AD_COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label}
@@ -93,7 +93,7 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
                 ))}
               </select>
             </label>
-            <Button type="submit">Hinzufügen</Button>
+            <SubmitButton>Hinzufügen</SubmitButton>
           </form>
           {!meta ? <p className="border-t border-border px-5 py-3 text-xs text-warning">META_ACCESS_TOKEN fehlt: Stichwörter werden gespeichert, aber erst gesammelt, wenn die Meta-API verbunden ist.</p> : null}
           {terms.length ? (
@@ -114,13 +114,13 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
                     <form action={toggleWatchTerm}>
                       <input type="hidden" name="id" value={t.id} />
                       <input type="hidden" name="aktiv" value={t.active ? "0" : "1"} />
-                      <Button type="submit" variant="ghost">{t.active ? "Pausieren" : "Aktivieren"}</Button>
+                      <SubmitButton variant="ghost">{t.active ? "Pausieren" : "Aktivieren"}</SubmitButton>
                     </form>
                     <form action={removeWatchTerm}>
                       <input type="hidden" name="id" value={t.id} />
-                      <Button type="submit" variant="ghost" aria-label={`${t.term} entfernen`}>
+                      <SubmitButton variant="ghost" title={`${t.term} entfernen`}>
                         <Trash2 className="size-4" />
-                      </Button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </li>
@@ -137,7 +137,7 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
           <CardHeader
             title="Product Hunt"
             description="Jeden Tag um ca. 05:00: neue Launches der letzten 36 Stunden. Gespeichert werden nur Launches mit Konsum-Themen (z. B. Hardware, Fashion, Home, Beauty, Pets) und ohne klares Software-Thema. Product Hunt ist überwiegend Software, deshalb kommen hier eher wenige Treffer. Landet im Startup Spy."
-            action={<RunButton job="producthunt" disabled={!ph} label="Jetzt sammeln" />}
+            action={<RunButton job="producthunt" disabled={!ph} label="Jetzt sammeln" reason="PRODUCTHUNT_TOKEN fehlt" />}
           />
           <p className="border-t border-border px-5 py-3 text-xs text-muted">
             {ph
@@ -150,20 +150,20 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
           <CardHeader
             title="RSS-Feeds"
             description="Jeden Tag um ca. 05:30 werden alle Feeds gelesen. Mit Stichwörtern werden nur passende Einträge gespeichert. Nur Feeds eintragen, die zum Abonnieren gedacht sind (RSS/Atom-Link auf der Website)."
-            action={<RunButton job="rss" disabled={!feeds.length} label="Jetzt lesen" />}
+            action={<RunButton job="rss" disabled={!feeds.length} label="Jetzt lesen" reason="Zuerst einen Feed hinzufügen" />}
           />
           <form action={addFeed} className="grid gap-3 border-t border-border p-5 md:grid-cols-[2fr_1fr_1fr]">
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Feed-Adresse (https)</span>
-              <input name="url" type="url" required maxLength={1000} className={fieldClass} placeholder="https://…/feed" />
+              <input name="url" type="url" required maxLength={1000} className={inputClass} placeholder="https://…/feed" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Name</span>
-              <input name="name" maxLength={100} className={fieldClass} placeholder="optional" />
+              <input name="name" maxLength={100} className={inputClass} placeholder="optional" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Bereich</span>
-              <select name="bereich" defaultValue="future_radar" className={fieldClass}>
+              <select name="bereich" defaultValue="future_radar" className={inputClass}>
                 {Object.entries(AREA_LABEL).map(([v, l]) => (
                   <option key={v} value={v}>
                     {l}
@@ -173,10 +173,10 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
             </label>
             <label className="flex flex-col gap-1 text-sm md:col-span-2">
               <span className="font-medium">Nur Einträge mit diesen Wörtern (Komma-getrennt, leer = alle)</span>
-              <input name="stichwoerter" maxLength={2000} className={fieldClass} placeholder="z. B. launch, dtc, gadget, kickstarter" />
+              <input name="stichwoerter" maxLength={2000} className={inputClass} placeholder="z. B. launch, dtc, gadget, kickstarter" />
             </label>
             <div className="flex items-end">
-              <Button type="submit">Feed hinzufügen</Button>
+              <SubmitButton>Feed hinzufügen</SubmitButton>
             </div>
           </form>
           {feeds.length ? (
@@ -194,9 +194,9 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
                   </div>
                   <form action={removeFeed}>
                     <input type="hidden" name="id" value={f.id} />
-                    <Button type="submit" variant="ghost" aria-label={`${f.name} entfernen`}>
+                    <SubmitButton variant="ghost" title={`${f.name} entfernen`}>
                       <Trash2 className="size-4" />
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </li>
               ))}

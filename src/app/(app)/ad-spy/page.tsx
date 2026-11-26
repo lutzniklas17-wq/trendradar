@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
 import { getMetaEnv } from "@/lib/env";
@@ -34,7 +35,6 @@ import { AdSpyNav } from "@/components/ads/ad-spy-nav";
 
 export const metadata: Metadata = { title: "Ad Spy" };
 
-const fieldClass = "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
 const dateFmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" }) : "unbekannt";
 
@@ -80,7 +80,7 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
       />
       <AdSpyNav active="suche" />
       {notice ? (
-        <Card className="mb-6 border-accent/40">
+        <Card className="mb-6">
           <p className="px-5 py-3 text-sm">
             {notice}{" "}
             <Link href="/ad-spy/rangliste" className="text-accent hover:underline">
@@ -94,7 +94,7 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
         <form method="get" className="flex flex-wrap items-end gap-3 p-5">
           <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm">
             <span className="font-medium">Suchbegriff (Text der Anzeige)</span>
-            <input name="q" defaultValue={raw} required maxLength={MAX_SEARCH_LENGTH} className={fieldClass} placeholder="z. B. led maske" />
+            <input name="q" defaultValue={raw} required maxLength={MAX_SEARCH_LENGTH} className={inputClass} placeholder="z. B. led maske" />
           </label>
           <Select name="land" label="Land (EU)" value={query.country} options={AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label }))} />
           <Select name="status" label="Status" value={query.status} options={AD_STATUSES} />
@@ -299,7 +299,7 @@ function Select({
   return (
     <label className="flex flex-col gap-1 text-sm">
       <span className="font-medium">{label}</span>
-      <select name={name} defaultValue={value} className={fieldClass}>
+      <select name={name} defaultValue={value} className={inputClass}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

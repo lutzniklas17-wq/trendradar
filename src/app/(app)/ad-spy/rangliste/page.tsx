@@ -4,7 +4,7 @@ import { ExternalLink, Trophy } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
 import { requireOwner } from "@/lib/auth";
@@ -24,7 +24,6 @@ import { trackShop } from "../../shop-spy/actions";
 
 export const metadata: Metadata = { title: "Ad Spy Rangliste" };
 
-const fieldClass = "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const dateFmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" }) : "unbekannt");
 const platformLabel = (p: string) => p.charAt(0) + p.slice(1).toLowerCase().replace("_", " ");
@@ -41,9 +40,10 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
 
   const view = advertiserParam ? "anzeigen" : f.view;
   const sorts = view === "anzeigen" ? AD_SORTS : ADVERTISER_SORTS;
+  const sortValue = view === "anzeigen" && advertiserParam && f.view !== "anzeigen" ? "longest" : f.sort;
   const [advertisers, ads] = await Promise.all([
     view === "werbetreibende" ? rankAdvertisers(supabase, f) : Promise.resolve(null),
-    view === "anzeigen" ? rankAds(supabase, { ...f, sort: advertiserParam && f.view !== "anzeigen" ? "longest" : f.sort, advertiserId: advertiserParam }) : Promise.resolve(null),
+    view === "anzeigen" ? rankAds(supabase, { ...f, sort: sortValue, advertiserId: advertiserParam }) : Promise.resolve(null),
   ]);
   const error = advertisers?.error ?? ads?.error ?? null;
   const advertiserName = advertiserParam ? (ads?.rows[0]?.advertiser_name ?? "Werbetreibender") : null;
@@ -58,16 +58,19 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
       <AdSpyNav active="rangliste" />
 
       <Card className="mb-6">
-        <form method="get" className="flex flex-wrap items-end gap-3 p-5">
-          <input type="hidden" name="ansicht" value={view} />
-          <Select name="sortierung" label="Sortierung" value={view === "anzeigen" && advertiserParam && f.view !== "anzeigen" ? "longest" : f.sort} options={sorts} />
-          <Select name="zeitraum" label="Aktiv gesehen" value={String(f.days)} options={RANK_WINDOWS} />
-          <Select name="land" label="Land" value={f.country ?? ""} options={[{ value: "", label: "Alle" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label }))]} />
-          <Select name="plattform" label="Plattform" value={f.platform ?? ""} options={RANK_PLATFORMS} />
-          <Select name="stichwort" label="Stichwort" value={f.termId ?? ""} options={[{ value: "", label: "Alle" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))]} />
-          {advertiserParam ? <input type="hidden" name="werbetreibender" value={advertiserParam} /> : null}
-          <Button type="submit">Anwenden</Button>
-        </form>
+        <FilterBar
+          path="/ad-spy/rangliste"
+          query={null}
+          keep={{ ansicht: view, ...(advertiserParam ? { werbetreibender: advertiserParam } : {}) }}
+          active={Boolean(f.country || f.platform || f.termId || f.days !== 2)}
+          controls={[
+            { kind: "select", name: "sortierung", label: "Sortierung", value: sortValue, options: sorts },
+            { kind: "select", name: "zeitraum", label: "Aktiv gesehen", value: String(f.days), options: RANK_WINDOWS },
+            { kind: "select", name: "land", label: "Land", value: f.country ?? "", options: [{ value: "", label: "Alle Länder" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: "EU", label: "EU gesamt (Shop-Zählung)" }] },
+            { kind: "select", name: "plattform", label: "Plattform", value: f.platform ?? "", options: RANK_PLATFORMS },
+            { kind: "select", name: "stichwort", label: "Stichwort", value: f.termId ?? "", options: [{ value: "", label: "Alle Stichwörter" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))] },
+          ]}
+        />
         <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3 text-xs">
           <span className="self-center text-muted">Schnellwahl:</span>
           <QuickLink href={rankHref(f, { view: "werbetreibende", sort: "active" })} active={view === "werbetreibende" && f.sort === "active"}>
@@ -235,24 +238,8 @@ function NoData() {
 
 function QuickLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
-    <Link href={href} className={cn("rounded-full border px-3 py-1 font-medium", active ? "border-accent bg-accent text-white" : "border-border text-muted hover:text-foreground")}>
+    <Link href={href} className={cn("rounded-md border px-3 py-1 font-medium", active ? "border-accent bg-accent text-white" : "border-border text-muted hover:text-foreground")}>
       {children}
     </Link>
   );
 }
-
-function Select({ name, label, value, options }: { name: string; label: string; value: string; options: readonly { value: string; label: string }[] }) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      <select name={name} defaultValue={value} className={fieldClass}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-

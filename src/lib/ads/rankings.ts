@@ -60,7 +60,8 @@ export function parseRankFilters(params: Record<string, unknown>): RankFilters {
     view,
     sort,
     days: Number(pick(RANK_WINDOWS, one(params.zeitraum), "2")),
-    country: (EU_COUNTRIES as readonly string[]).includes(country) ? country : null,
+    // "EU" = Sichtungen aus der Shop-Zählung (alle EU-Länder zusammen)
+    country: (EU_COUNTRIES as readonly string[]).includes(country) || country === "EU" ? country : null,
     platform: platform || null,
     termId: UUID.test(term) ? term : null,
   };

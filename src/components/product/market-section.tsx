@@ -2,13 +2,13 @@ import Link from "next/link";
 import { ExternalLink, Megaphone } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AD_COUNTRIES, libraryPageUrl, libraryUrl } from "@/lib/ads/meta";
 import type { LinkedAd, LinkedAdvertiser } from "@/lib/links";
 import { addWatchTerm } from "@/app/(app)/sammler/actions";
 
-const fieldClass = "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
 const dateFmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" }) : "unbekannt");
 
 type Term = { id: string; term: string; country: string; last_count: number | null; last_run_at: string | null };
@@ -40,11 +40,11 @@ export function MarketSection({
           <input type="hidden" name="zurueck" value={`/produkt/${item.id}`} />
           <label className="flex min-w-60 flex-1 flex-col gap-1 text-sm">
             <span className="font-medium">Stichwort (in der Sprache des Landes)</span>
-            <input name="begriff" required maxLength={100} defaultValue={item.name.slice(0, 100)} className={fieldClass} />
+            <input name="begriff" required maxLength={100} defaultValue={item.name.slice(0, 100)} className={inputClass} />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">Land</span>
-            <select name="land" defaultValue="DE" className={fieldClass}>
+            <select name="land" defaultValue="DE" className={inputClass}>
               {AD_COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.label}
@@ -52,7 +52,7 @@ export function MarketSection({
               ))}
             </select>
           </label>
-          <Button type="submit">Täglich sammeln</Button>
+          <SubmitButton>Täglich sammeln</SubmitButton>
         </form>
         {terms.length ? (
           <ul className="divide-y divide-border border-t border-border text-sm">

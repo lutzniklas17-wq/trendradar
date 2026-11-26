@@ -12,6 +12,7 @@ import { getMetaEnv } from "@/lib/env";
 import { libraryPageUrl, PAGE_ADS_LIMIT } from "@/lib/ads/meta";
 import { formatCount, MAX_PAGES_PER_SHOP, shopTrend, sortedDomains } from "@/lib/shops/shops";
 import { refreshShop, removeShop } from "../actions";
+import { FavoriteShopButton } from "@/components/shops/favorite-shop-button";
 import { loadShopLinks } from "@/lib/links";
 
 export const metadata: Metadata = { title: "Shop" };
@@ -34,7 +35,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
   const { supabase } = await requireOwner();
   const { data: shop } = await supabase
     .from("tracked_shops")
-    .select("id, page_id, name, created_at, last_checked_at, last_error")
+    .select("*") // enthält favorite ab Migration 0006
     .eq("id", id)
     .maybeSingle();
   if (!shop) notFound();
@@ -125,7 +126,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
               <ul className="flex flex-wrap gap-2">
                 {links.products.map((p) => (
                   <li key={p.id}>
-                    <Link href={`/produkt/${p.id}`} className="rounded-full border border-border px-3 py-1 hover:border-accent hover:text-accent">
+                    <Link href={`/produkt/${p.id}`} className="rounded-md border border-border px-3 py-1 hover:border-accent hover:text-accent">
                       {p.name} <span className="text-muted">· {p.ads}</span>
                     </Link>
                   </li>
@@ -187,6 +188,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
             ) : (
               <span className="text-muted">Meta-API nicht verbunden, Zählen nicht möglich.</span>
             )}
+            <FavoriteShopButton id={shop.id} favorite={Boolean(shop.favorite)} withLabel />
             <a href={libraryPageUrl(shop.page_id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
               Alle Anzeigen in der Ad Library <ExternalLink className="size-3" />
             </a>

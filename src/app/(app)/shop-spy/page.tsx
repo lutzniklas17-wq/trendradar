@@ -11,6 +11,7 @@ import { requireOwner } from "@/lib/auth";
 import { filterShops, hasShopFilters, parseShopFilters, resultLabel, SHOP_SIGNALS, SHOP_SORTS } from "@/lib/list-filters";
 import { getMetaEnv } from "@/lib/env";
 import { dayDaysAgo, formatCount, shopTrend, sortedDomains, zurichDay, type Snapshot } from "@/lib/shops/shops";
+import { FavoriteShopButton } from "@/components/shops/favorite-shop-button";
 import { refreshAllShops, trackShop } from "./actions";
 import { inputClass } from "@/components/ui/field";
 
@@ -24,6 +25,7 @@ type Row = {
   name: string;
   last_checked_at: string | null;
   last_error: string | null;
+  favorite?: boolean;
   shop_snapshots: { day: string; active_ads: number; capped: boolean; domains: Record<string, number> | null; new_ads: number | null }[];
 };
 
@@ -37,7 +39,7 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
   const since = dayDaysAgo(60);
   const { data, error } = await supabase
     .from("tracked_shops")
-    .select("id, page_id, name, last_checked_at, last_error, shop_snapshots(day, active_ads, capped, domains, new_ads)")
+    .select("*, shop_snapshots(day, active_ads, capped, domains, new_ads)") // * enthält favorite ab Migration 0006
     .gte("shop_snapshots.day", since)
     .order("name");
   const shops = ((data ?? []) as Row[]).map((s) => {
@@ -158,6 +160,7 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
                       return (
                         <tr key={s.id}>
                           <td className="px-5 py-3">
+                            <FavoriteShopButton id={s.id} favorite={Boolean(s.favorite)} />{" "}
                             <Link href={`/shop-spy/${s.id}`} className="font-medium hover:text-accent">
                               {s.name}
                             </Link>
