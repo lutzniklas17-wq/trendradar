@@ -3,12 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { Claim } from "@/lib/library/top-hits";
+import { librarySource } from "@/lib/library/sources";
 import { cn } from "@/lib/utils";
 import { ProductRow } from "@/components/library/product-row";
 import { adoptProduct, toggleHidden } from "@/app/(app)/produkte/actions";
 
 export type LibraryProduct = {
   id: string;
+  /** Plattform, von der das Produkt stammt (`cj`, `aliexpress`, siehe LIBRARY_SOURCES). */
+  platform: string;
   title: string;
   image_url: string | null;
   price: number | null;
@@ -28,7 +31,12 @@ export type LibraryProduct = {
 };
 
 const count = new Intl.NumberFormat("de-CH");
-const money = (v: number, currency: string) => new Intl.NumberFormat("de-CH", { style: "currency", currency, minimumFractionDigits: 2 }).format(v);
+const money = (v: number, currency: string) =>
+  new Intl.NumberFormat("de-CH", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(v);
 
 const CLAIM_LABEL: Record<Claim["kind"], { label: string; tone: "positive" | "accent" | "warning" }> = {
   fact: { label: "Fakt", tone: "positive" },
@@ -52,7 +60,12 @@ function ProductImage({ src, alt }: { src: string | null; alt: string }) {
 export function ProductCard({ product: p, claims, rank }: { product: LibraryProduct; claims?: Claim[]; rank?: number }) {
   const excluded = p.relevance === "irrelevant" || p.ai_relevant === false;
   return (
-    <article className={cn("group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong", p.hidden && "opacity-60")}>
+    <article
+      className={cn(
+        "group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong",
+        p.hidden && "opacity-60",
+      )}
+    >
       <div className="relative">
         <ProductImage src={p.image_url} alt={p.title} />
         {rank ? (
@@ -74,12 +87,15 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-sm font-medium tabular-nums">{p.price !== null ? money(p.price, p.currency) : "Preis fehlt"}</span>
           {p.listed_count !== null ? (
-            <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums" title="So oft haben Shops das Produkt bei CJ übernommen (Quelle: CJ API)">
+            <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums" title={librarySource(p.platform)?.popularityHint}>
               <Users className="size-3" aria-hidden /> {count.format(p.listed_count)}
             </span>
           ) : null}
         </div>
-        {p.category_path ? <p className="truncate text-xs text-subtle">{p.category_path}</p> : null}
+        <p className="truncate text-xs text-subtle">
+          {librarySource(p.platform)?.name ?? p.platform}
+          {p.category_path ? ` · ${p.category_path}` : ""}
+        </p>
 
         <div className="flex flex-wrap gap-1">
           {p.free_shipping ? (
@@ -92,7 +108,11 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
               <Video className="size-3" aria-hidden /> Video
             </Badge>
           ) : null}
-          {p.relevance === "unclear" ? <Badge tone="warning" title={p.relevance_reason ?? undefined}>Unklar</Badge> : null}
+          {p.relevance === "unclear" ? (
+            <Badge tone="warning" title={p.relevance_reason ?? undefined}>
+              Unklar
+            </Badge>
+          ) : null}
           {excluded ? (
             <Badge tone="negative" title={p.relevance_reason ?? p.ai_reason ?? undefined}>
               Ausgeschlossen
@@ -127,31 +147,31 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
 function ProductActions({ product: p, full = true }: { product: LibraryProduct; full?: boolean }) {
   return (
     <>
-          <form action={adoptProduct} className={full ? "min-w-0 flex-1" : undefined}>
-            <input type="hidden" name="id" value={p.id} />
-            <SubmitButton size="sm" variant={p.item_id ? "secondary" : "primary"} className="w-full min-w-0 px-2" pendingLabel="…">
-              {p.item_id ? "Öffnen" : "Übernehmen"}
-            </SubmitButton>
-          </form>
-          {p.product_url ? (
-            <a
-              href={p.product_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClass("ghost", "sm", "px-1.5")}
-              title="Bei CJdropshipping ansehen"
-              aria-label="Bei CJdropshipping ansehen"
-            >
-              <ExternalLink className="size-3.5" aria-hidden />
-            </a>
-          ) : null}
-          <form action={toggleHidden}>
-            <input type="hidden" name="id" value={p.id} />
-            <input type="hidden" name="hide" value={p.hidden ? "0" : "1"} />
-            <SubmitButton size="sm" variant="ghost" className="px-1.5" title={p.hidden ? "Wieder einblenden" : "Ausblenden"}>
-              {p.hidden ? <Eye className="size-3.5" aria-label="Wieder einblenden" /> : <EyeOff className="size-3.5" aria-label="Ausblenden" />}
-            </SubmitButton>
-          </form>
+      <form action={adoptProduct} className={full ? "min-w-0 flex-1" : undefined}>
+        <input type="hidden" name="id" value={p.id} />
+        <SubmitButton size="sm" variant={p.item_id ? "secondary" : "primary"} className="w-full min-w-0 px-2" pendingLabel="…">
+          {p.item_id ? "Öffnen" : "Übernehmen"}
+        </SubmitButton>
+      </form>
+      {p.product_url ? (
+        <a
+          href={p.product_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClass("ghost", "sm", "px-1.5")}
+          title={`Bei ${librarySource(p.platform)?.name ?? "Lieferant"} ansehen`}
+          aria-label={`Bei ${librarySource(p.platform)?.name ?? "Lieferant"} ansehen`}
+        >
+          <ExternalLink className="size-3.5" aria-hidden />
+        </a>
+      ) : null}
+      <form action={toggleHidden}>
+        <input type="hidden" name="id" value={p.id} />
+        <input type="hidden" name="hide" value={p.hidden ? "0" : "1"} />
+        <SubmitButton size="sm" variant="ghost" className="px-1.5" title={p.hidden ? "Wieder einblenden" : "Ausblenden"}>
+          {p.hidden ? <Eye className="size-3.5" aria-label="Wieder einblenden" /> : <EyeOff className="size-3.5" aria-label="Ausblenden" />}
+        </SubmitButton>
+      </form>
     </>
   );
 }
@@ -162,7 +182,10 @@ export function LibraryProductRow({
   ads,
   rank,
 }: {
-  product: LibraryProduct & { listed_at?: string | null; first_seen_at?: string | null; platform?: string | null };
+  product: LibraryProduct & {
+    listed_at?: string | null;
+    first_seen_at?: string | null;
+  };
   ads?: { active: number; total: number } | null;
   rank?: number;
 }) {
@@ -171,7 +194,12 @@ export function LibraryProductRow({
     <ProductRow
       rank={rank}
       muted={p.hidden}
-      product={{ ...p, platform: p.platform ?? "cj" }}
+      product={{
+        ...p,
+        supplier: librarySource(p.platform)?.name ?? p.platform,
+      }}
+      popularity={librarySource(p.platform)?.popularity}
+      popularityHint={librarySource(p.platform)?.popularityHint}
       ads={ads}
       adsHint={p.item_id ? "Noch keine Anzeigen. Stichwort im Datensammler anlegen." : "Merken, um Anzeigen zu diesem Produkt zu sammeln."}
       badges={
@@ -181,7 +209,11 @@ export function LibraryProductRow({
               Einschätzung · KI {p.ai_score}/5
             </Badge>
           ) : null}
-          {p.relevance === "unclear" ? <Badge tone="warning" title={p.relevance_reason ?? undefined}>Unklar</Badge> : null}
+          {p.relevance === "unclear" ? (
+            <Badge tone="warning" title={p.relevance_reason ?? undefined}>
+              Unklar
+            </Badge>
+          ) : null}
           {excluded ? (
             <Badge tone="negative" title={p.relevance_reason ?? p.ai_reason ?? undefined}>
               Ausgeschlossen

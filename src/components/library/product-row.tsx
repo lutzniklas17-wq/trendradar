@@ -32,8 +32,19 @@ export type ProductRowData = {
 export type ProductRowAds = { active: number; total: number } | null;
 
 const count = new Intl.NumberFormat("de-CH");
-const money = (v: number, currency: string) => new Intl.NumberFormat("de-CH", { style: "currency", currency, minimumFractionDigits: 2 }).format(v);
-const day = (iso: string) => new Date(iso).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Zurich" });
+const money = (v: number, currency: string) =>
+  new Intl.NumberFormat("de-CH", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(v);
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString("de-CH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Zurich",
+  });
 
 function safeHost(url: string | null | undefined) {
   if (!url) return null;
@@ -58,6 +69,8 @@ export function ProductRow({
   actions,
   muted = false,
   adsHint = "Noch keine Anzeigen. Stichwort im Datensammler anlegen.",
+  popularity = "Von Shops übernommen",
+  popularityHint,
 }: {
   product: ProductRowData;
   /** Anzeigen über die Stichwörter des Produkts. `undefined` blendet die Spalte aus. */
@@ -68,6 +81,9 @@ export function ProductRow({
   actions?: React.ReactNode;
   muted?: boolean;
   adsHint?: string;
+  /** Was `listed_count` bei dieser Plattform bedeutet (CJ: Übernahmen, AliExpress: Verkäufe). */
+  popularity?: string;
+  popularityHint?: string;
 }) {
   const host = safeHost(p.product_url);
   const platform = p.platform ? getSupplierPlatform(p.platform) : undefined;
@@ -129,10 +145,17 @@ export function ProductRow({
         <div className="mt-auto flex flex-wrap items-end gap-x-4 gap-y-3 pt-4">
           {supplierName ? (
             <span className="flex min-w-0 items-center gap-2 text-[13px]">
-              {platform ? <PlatformLogo icon={platform.icon} monogram={platform.monogram} color={platform.color} name={platform.name} className="size-6 rounded-md text-[9px]" /> : null}
+              {platform ? (
+                <PlatformLogo icon={platform.icon} monogram={platform.monogram} color={platform.color} name={platform.name} className="size-6 rounded-md text-[9px]" />
+              ) : null}
               <span className="text-muted">von</span>
               {host ? (
-                <a href={p.product_url!} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 font-medium underline decoration-border-strong underline-offset-4 hover:decoration-foreground">
+                <a
+                  href={p.product_url!}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1 font-medium underline decoration-border-strong underline-offset-4 hover:decoration-foreground"
+                >
                   <span className="truncate">{supplierName}</span>
                   <ExternalLink className="size-3 shrink-0 text-subtle" aria-hidden />
                 </a>
@@ -156,9 +179,9 @@ export function ProductRow({
       <div className="col-span-2 border-t border-border px-5 py-4 sm:px-6 xl:col-span-1 xl:border-t-0 xl:border-l xl:py-5">
         <p className="text-[13px] font-semibold">Lieferant</p>
         <dl className="mt-3 space-y-2.5 text-[13px]">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3" title={popularityHint}>
             <dt className="flex items-center gap-1.5 text-muted">
-              <Users className="size-3.5" aria-hidden /> Von Shops übernommen
+              <Users className="size-3.5" aria-hidden /> {popularity.charAt(0).toUpperCase() + popularity.slice(1)}
             </dt>
             <dd className="font-semibold tabular-nums">{p.listed_count !== null && p.listed_count !== undefined ? count.format(p.listed_count) : "–"}</dd>
           </div>

@@ -352,8 +352,16 @@ export const LIBRARY_RELEVANCE = [
   { value: "alle", label: "Alle" },
 ] as const;
 
+export const LIBRARY_PLATFORMS = [
+  { value: "", label: "Alle Plattformen" },
+  { value: "cj", label: "CJdropshipping" },
+  { value: "aliexpress", label: "AliExpress" },
+] as const;
+
 export type LibraryFilters = {
   text: string;
+  /** Nur Produkte einer Plattform (`supplier_products.platform`). */
+  platform: "" | "cj" | "aliexpress";
   /** Nur Treffer eines Suchbegriffs (Live-Suche oder täglicher Begriff). */
   term: string;
   maxPrice: number | null;
@@ -373,6 +381,7 @@ export function parseLibraryFilters(params: Params): LibraryFilters {
   return {
     text: (one(params.filter) ?? "").trim().slice(0, 100),
     term: (one(params.begriff) ?? "").trim().toLowerCase().slice(0, 80),
+    platform: pickOption(LIBRARY_PLATFORMS, one(params.plattform)),
     maxPrice: LIBRARY_PRICES.some((p) => p.value !== "" && Number(p.value) === price) ? price : null,
     relevance: pickOption(LIBRARY_RELEVANCE, one(params.relevanz)),
     sort: pickOption(LIBRARY_SORTS, one(params.sortierung)),
@@ -383,7 +392,7 @@ export function parseLibraryFilters(params: Params): LibraryFilters {
 }
 
 export function hasLibraryFilters(f: LibraryFilters) {
-  return Boolean(f.text || f.term || f.maxPrice || f.relevance || f.sort || f.freeShipping || f.showHidden);
+  return Boolean(f.text || f.term || f.platform || f.maxPrice || f.relevance || f.sort || f.freeShipping || f.showHidden);
 }
 
 /** Suchbegriff für eine ilike-Abfrage: Sonderzeichen von PostgREST und LIKE entfernen. */
@@ -397,6 +406,7 @@ export function libraryQuery(f: LibraryFilters, page: number) {
   const q = new URLSearchParams();
   if (f.text) q.set("filter", f.text);
   if (f.term) q.set("begriff", f.term);
+  if (f.platform) q.set("plattform", f.platform);
   if (f.maxPrice) q.set("preis", String(f.maxPrice));
   if (f.relevance) q.set("relevanz", f.relevance);
   if (f.sort) q.set("sortierung", f.sort);

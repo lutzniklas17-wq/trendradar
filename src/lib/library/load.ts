@@ -5,7 +5,7 @@ import { dayDaysAgo } from "@/lib/shops/shops";
 import { topHits, TOP_HITS, type Hit, type HitInput } from "@/lib/library/top-hits";
 
 export const LIBRARY_COLUMNS =
-  "id, title, image_url, price, currency, category_path, listed_count, free_shipping, has_video, product_url, relevance, relevance_reason, hidden, item_id, ai_relevant, ai_score, ai_reason";
+  "id, platform, title, image_url, price, currency, category_path, listed_count, free_shipping, has_video, product_url, relevance, relevance_reason, hidden, item_id, ai_relevant, ai_score, ai_reason";
 
 type HitRow = LibraryProduct & {
   listed_at: string | null;
@@ -30,6 +30,7 @@ export async function loadTopHits(supabase: SupabaseClient, limit = TOP_HITS): P
   const adsByTerm = new Map(((adsRes.data ?? []) as { term: string; ads: number }[]).map((r) => [r.term, Number(r.ads)]));
   const inputs: HitInput[] = rows.map((r) => ({
     id: r.id,
+    platform: r.platform,
     listedCount: r.listed_count,
     listedAt: r.listed_at,
     relevance: r.relevance,

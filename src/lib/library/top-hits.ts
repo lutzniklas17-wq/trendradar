@@ -10,6 +10,8 @@ export type Snapshot = { day: string; listedCount: number | null };
 
 export type HitInput = {
   id: string;
+  /** Plattform (`cj`, `aliexpress`); bestimmt, was `listedCount` bedeutet. */
+  platform?: string;
   listedCount: number | null;
   listedAt: string | null;
   relevance: "relevant" | "unclear" | "irrelevant";
@@ -57,14 +59,21 @@ export function scoreProduct(p: HitInput, adsByTerm: Map<string, number>, now = 
   let signals = 0;
 
   if (p.listedCount !== null) {
-    claims.push({ kind: "fact", text: `${fmt(p.listedCount)}× von Shops bei CJ übernommen` });
+    claims.push({
+      kind: "fact",
+      text: p.platform === "aliexpress" ? `${fmt(p.listedCount)} Verkäufe zuletzt bei AliExpress` : `${fmt(p.listedCount)}× von Shops bei CJ übernommen`,
+    });
     score += Math.log10(p.listedCount + 1) * 10;
     if (p.listedCount >= LISTED_STRONG) signals++;
   }
 
   const growth = listedGrowth(p.snapshots);
   if (growth && growth.delta > 0) {
-    claims.push({ kind: "signal", text: `+${fmt(growth.delta)} Übernahmen in ${growth.days} Tagen` });
+    claims.push({
+      kind: "signal",
+      // AliExpress liefert eine laufende Verkaufszahl, keine Summe: Differenz nur als Anstieg ausweisen.
+      text: p.platform === "aliexpress" ? `Verkaufszahl +${fmt(growth.delta)} gegenüber vor ${growth.days} Tagen` : `+${fmt(growth.delta)} Übernahmen in ${growth.days} Tagen`,
+    });
     score += Math.min(growth.delta, 500) / 5 + 10;
     signals++;
   }
