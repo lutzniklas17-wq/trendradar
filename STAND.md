@@ -17,17 +17,21 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 
 ## Erledigt
 - Phase 2 (auf `main`): Grundgerüst, Login, Schema `0001_init.sql`, Profit-Rechner.
-- Phase 3a (PR #1, Branch `phase3/produktseite`, CI grün): Produktseite mit Tabs, Lieferanten- und Verkaufskanäle, Angebote erfassen, Rechner speichern, Trend Spy mit Duplikatprüfung, Watchlist, Suche, Migration `0002_products.sql`.
+- Phase 3a (PR #1, gemergt): Produktseite mit Tabs, Lieferanten- und Verkaufskanäle, Angebote erfassen, Rechner speichern, Trend Spy mit Duplikatprüfung, Watchlist, Suche, Migration `0002_products.sql`.
+
+- Phase 3b (Branch `claude/project-thread-q8md4o`, PR offen): Google Trends über DataForSEO Live, Zwischenspeicher 24 h in `trend_series`, Tageslimit `DATAFORSEO_DAILY_LIMIT` (Standard 30), Seite `/google-trends` mit Kurve, Link von der Produktseite. Ohne Key: ehrlicher Hinweis, keine Beispieldaten. Keine neue Migration.
 
 ## Wichtige Dateien
 - `src/lib/profit.ts`, `offers.ts`, `platforms.ts`, `assessment.ts` (Logik, mit Tests)
 - `src/app/(app)/produkt/[id]/page.tsx`, `src/app/(app)/produkt/actions.ts`
 - `src/components/product/*`, `src/components/profit/profit-calculator.tsx`
+- `src/lib/trends/dataforseo.ts` (Anfrage/Antwort, Tests), `src/lib/trends/service.ts` (Cache, Limit, Abruf, Tests)
+- `src/app/(app)/google-trends/page.tsx`, `src/components/trends/trend-chart.tsx`
 - `supabase/migrations/*`
 
 ## Offene Punkte
-- Nutzer: PR #1 mergen, Supabase-Projekt anlegen und Migrationen 0001 und 0002 ausführen, Vercel mit Umgebungsvariablen einrichten (README).
-- Konten mit Kosten erst nach Zustimmung: Anthropic API, DataForSEO, Meta-Entwicklerkonto, CJdropshipping.
+- Nutzer: PR Phase 3b mergen, DataForSEO-Konto eröffnen (README „Google Trends“), Supabase-Projekt anlegen und Migrationen 0001 und 0002 ausführen, Vercel mit Umgebungsvariablen einrichten (README).
+- Konten mit Kosten erst nach Zustimmung: Anthropic API, Meta-Entwicklerkonto, CJdropshipping.
 
 ## Nächster Schritt
-Phase 3b: Google Trends über DataForSEO mit Zwischenspeicher (`trend_series`). Danach Meta Ad Spy, CJdropshipping-API für Angebote, KI-Analyse, Dashboard.
+Mit echtem Key prüfen, ob die Antwort von DataForSEO wie erwartet ausgelesen wird (bisher nur gegen Doku getestet). Später: verwandte/steigende Suchanfragen (eigene Abfrage, kostet extra), Standard-Modus (0.0027 USD) für die tägliche Recherche. Danach Meta Ad Spy, CJdropshipping-API für Angebote, KI-Analyse, Dashboard.
