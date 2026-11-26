@@ -29,6 +29,8 @@ import {
 } from "@/lib/ads/meta";
 import { searchAds, type AdLookup } from "@/lib/ads/service";
 import { trackShop } from "../shop-spy/actions";
+import { addWatchTerm } from "../sammler/actions";
+import { AdSpyNav } from "@/components/ads/ad-spy-nav";
 
 export const metadata: Metadata = { title: "Ad Spy" };
 
@@ -48,6 +50,7 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
     searchType: isAdSearchType(params.art) ? params.art : "KEYWORD_UNORDERED",
     after: typeof params.nach === "string" && params.nach.length < 500 ? params.nach : undefined,
   };
+  const notice = typeof params.hinweis === "string" ? params.hinweis.slice(0, 300) : null;
   const inputError = raw.trim() ? validateTerms(terms) : null;
   const configured = getMetaEnv() !== null;
 
@@ -75,6 +78,17 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
         title="Ad Spy"
         description="Anzeigen auf Facebook und Instagram aus der offiziellen Meta Ad Library. Abgedeckt sind nur Anzeigen, die in der EU ausgespielt wurden."
       />
+      <AdSpyNav active="suche" />
+      {notice ? (
+        <Card className="mb-6 border-accent/40">
+          <p className="px-5 py-3 text-sm">
+            {notice}{" "}
+            <Link href="/ad-spy/rangliste" className="text-accent hover:underline">
+              Zur Rangliste
+            </Link>
+          </p>
+        </Card>
+      ) : null}
 
       <Card className="mb-6">
         <form method="get" className="flex flex-wrap items-end gap-3 p-5">
@@ -172,7 +186,12 @@ function Results({
         <CardHeader
           title={`${ads.length} Anzeigen · ${countryLabel} · „${query.terms}“`}
           description={`Abgefragt am ${now.toLocaleString("de-CH", { timeZone: "Europe/Zurich" })}${lookup.saved ? "" : " · Speichern in der Datenbank fehlgeschlagen"}`}
-          action={<ProvenanceBadge kind="data" />}
+          action={
+            <span className="flex flex-wrap items-center gap-3">
+              <WatchTermButton terms={query.terms} country={query.country} />
+              <ProvenanceBadge kind="data" />
+            </span>
+          }
         />
         {ads.length ? (
           <ul className="divide-y divide-border">
@@ -236,6 +255,20 @@ function AdRow({ ad, now }: { ad: MetaAd; now: Date }) {
         </a>
       </div>
     </li>
+  );
+}
+
+/** Suchbegriff in den täglichen Sammellauf aufnehmen: daraus entsteht die Rangliste. */
+function WatchTermButton({ terms, country }: { terms: string; country: string }) {
+  return (
+    <form action={addWatchTerm}>
+      <input type="hidden" name="begriff" value={terms} />
+      <input type="hidden" name="land" value={country} />
+      <input type="hidden" name="zurueck" value={`/ad-spy?${new URLSearchParams({ q: terms, land: country })}`} />
+      <button type="submit" className="text-xs font-medium text-accent hover:underline" title="Jeden Tag automatisch die aktiven Anzeigen zu diesem Begriff sammeln">
+        Täglich sammeln
+      </button>
+    </form>
   );
 }
 

@@ -77,6 +77,13 @@ Einrichtung:
 
 Ohne diese zwei Variablen funktioniert der Shop Spy trotzdem, aber nur mit dem Knopf „jetzt zählen“.
 
+## Ad Spy Rangliste (eigene Daten)
+
+Unter Ad Spy → „Rangliste (eigene Daten)“: Werbetreibende nach **meisten aktiven Anzeigen jetzt**, meisten neuen Anzeigen (7 Tage),
+längster Laufzeit oder neuester Anzeige; einzelne Anzeigen nach Laufzeit, Startdatum oder EU-Reichweite. Filter: Zeitraum, Land, Plattform, Stichwort.
+Ehrlich: Meta liefert keine globale Rangliste. Gezählt wird nur, was TrendRadar selbst gesehen hat (täglicher Sammellauf über die Stichwörter
+plus jede Live-Suche mit Status „Aktiv“). Je mehr passende Stichwörter, desto aussagekräftiger. Einrichtung: Migration `0005_ad_rankings.sql`.
+
 ## Datensammler (tägliche Bots)
 
 Die Seite „Datensammler“ steuert die Bots, die jeden Tag automatisch laufen. Alle Quellen sind offiziell und kostenlos;
