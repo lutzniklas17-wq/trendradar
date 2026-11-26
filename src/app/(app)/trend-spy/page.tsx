@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreateProductForm } from "@/components/product/create-product-form";
 import { ItemList, type ItemListEntry } from "@/components/product/item-list";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { requireOwner } from "@/lib/auth";
+import { categoryOptions, filterItems, hasItemFilters, ITEM_PERIODS, ITEM_SORTS, parseItemFilters, resultLabel } from "@/lib/list-filters";
 
 export const metadata: Metadata = { title: "Trend Spy" };
 
@@ -17,7 +19,8 @@ const PLANNED_SOURCES = [
   { name: "Claude Websuche", note: "Einordnung, Duplikate, Begründung" },
 ];
 
-export default async function TrendSpyPage() {
+export default async function TrendSpyPage({ searchParams }: PageProps<"/trend-spy">) {
+  const filters = parseItemFilters(await searchParams);
   const { supabase } = await requireOwner();
   const { data, error } = await supabase
     .from("items")
@@ -25,8 +28,9 @@ export default async function TrendSpyPage() {
     .eq("area", "trend_spy")
     .eq("type", "product")
     .order("first_discovered_at", { ascending: false })
-    .limit(200);
-  const items = (data ?? []) as ItemListEntry[];
+    .limit(1000);
+  const all = ((data ?? []) as ItemListEntry[]).map((i) => ({ ...i, date: i.first_discovered_at }));
+  const items = filterItems(all, filters);
 
   return (
     <>
@@ -37,12 +41,31 @@ export default async function TrendSpyPage() {
             title="Produkte"
             description="Automatische Entdeckungen kommen mit der täglichen Recherche dazu. Bis dahin erfasst du Produkte selbst."
           />
+          {all.length ? (
+            <FilterBar
+              path="/trend-spy"
+              query={filters.text}
+              queryPlaceholder="Name, Kategorie…"
+              active={hasItemFilters(filters)}
+              resultLabel={resultLabel(items.length, all.length, ["Produkt", "Produkte"])}
+              controls={[
+                { kind: "select", name: "kategorie", label: "Kategorie", value: filters.category, options: categoryOptions(all) },
+                { kind: "select", name: "zeitraum", label: "Entdeckt", value: filters.periodDays ? String(filters.periodDays) : "", options: ITEM_PERIODS },
+                { kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: ITEM_SORTS },
+                { kind: "toggle", name: "neu", label: "Nur neue", checked: filters.onlyNew },
+              ]}
+            />
+          ) : null}
           {error ? (
             <EmptyState icon={Flame} title="Datenbank nicht erreichbar">
               Ist die Migration ausgeführt? Siehe README.
             </EmptyState>
           ) : items.length ? (
             <ItemList items={items} />
+          ) : all.length ? (
+            <EmptyState icon={Flame} title="Keine Produkte für diese Filter">
+              Filter lockern oder zurücksetzen.
+            </EmptyState>
           ) : (
             <EmptyState icon={Flame} title="Noch keine Produkte">
               Es werden keine Beispieldaten angezeigt. Lege rechts dein erstes Produkt an.

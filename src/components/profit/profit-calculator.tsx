@@ -110,7 +110,7 @@ function NumberInput({
           setText(e.target.value);
           onChange(parse(e.target.value));
         }}
-        className="h-9 w-full rounded-lg border border-border bg-background pr-12 pl-3 text-right text-sm tabular-nums outline-none focus:border-accent"
+        className="h-9 w-full rounded-md border border-border bg-surface pr-12 pl-3 text-right text-sm tabular-nums shadow-xs outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
       />
       <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted">
         {unit === "percent" ? "%" : currency}
@@ -216,7 +216,7 @@ export function ProfitCalculator({
                   setCurrency(e.target.value);
                   setSaveState({ status: "idle" });
                 }}
-                className="h-8 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+                className="h-8 rounded-md border border-border bg-surface px-2 text-sm text-foreground shadow-xs outline-none hover:border-border-strong focus:border-accent"
               >
                 {["CHF", "EUR", "USD"].map((c) => (
                   <option key={c}>{c}</option>
@@ -228,7 +228,7 @@ export function ProfitCalculator({
         <div className="space-y-6 p-5">
           {FIELD_GROUPS.map((group) => (
             <fieldset key={group.title}>
-              <legend className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">{group.title}</legend>
+              <legend className="mb-3 text-xs font-medium text-muted">{group.title}</legend>
               <div className="grid gap-3 sm:grid-cols-2">
                 {group.fields.map((f) => (
                   <div key={f.key}>
@@ -268,7 +268,7 @@ export function ProfitCalculator({
             <div className="mb-5 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-surface-muted p-3">
                 <p className="text-xs text-muted">Gewinn pro Bestellung</p>
-                <p className="mt-1 text-xl font-semibold">
+                <p className="mt-1 text-xl font-medium">
                   <Money value={result.profitPerOrder} currency={currency} signed />
                 </p>
               </div>
@@ -276,7 +276,7 @@ export function ProfitCalculator({
                 <p className="text-xs text-muted">Marge (vom Netto-Umsatz)</p>
                 <p
                   className={cn(
-                    "mt-1 text-xl font-semibold tabular-nums",
+                    "mt-1 text-xl font-medium tabular-nums",
                     result.marginPercent != null && result.marginPercent < 0 && "text-negative",
                   )}
                 >
@@ -311,19 +311,19 @@ export function ProfitCalculator({
           <dl className="grid grid-cols-1 gap-3 p-5 text-sm sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
             <div>
               <dt className="text-muted">Break-even-Preis</dt>
-              <dd className="mt-0.5 font-semibold">
+              <dd className="mt-0.5 font-medium">
                 {result.breakEvenPrice == null ? "nicht erreichbar" : <Money value={result.breakEvenPrice} currency={currency} />}
               </dd>
             </div>
             <div>
               <dt className="text-muted">Max. Werbekosten / Bestellung</dt>
-              <dd className="mt-0.5 font-semibold">
+              <dd className="mt-0.5 font-medium">
                 <Money value={result.maxAdCostPerOrder} currency={currency} signed />
               </dd>
             </div>
             <div>
               <dt className="text-muted">Break-even-ROAS</dt>
-              <dd className="mt-0.5 font-semibold tabular-nums">
+              <dd className="mt-0.5 font-medium tabular-nums">
                 {result.breakEvenRoas == null ? "nicht erreichbar" : formatNumber(result.breakEvenRoas)}
               </dd>
             </div>

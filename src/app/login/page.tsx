@@ -9,13 +9,13 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-3 rounded-xl bg-accent p-2.5 text-white dark:text-black">
-            <Radar className="size-6" aria-hidden />
+          <span className="mb-4 flex size-10 items-center justify-center rounded-lg border border-border-strong bg-surface shadow-xs">
+            <Radar className="size-5" aria-hidden strokeWidth={1.75} />
           </span>
-          <h1 className="text-xl font-semibold">TrendRadar</h1>
+          <h1 className="text-lg font-medium tracking-tight">TrendRadar</h1>
           <p className="mt-1 text-sm text-muted">Privater Zugang</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="rounded-lg border border-border bg-surface p-6 shadow-xs">
           <LoginForm />
         </div>
       </div>

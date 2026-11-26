@@ -1,32 +1,54 @@
 @import "tailwindcss";
 
+/*
+ * Design-Tokens (Regeln in STAND.md, Abschnitt „Design-Regeln“).
+ * Ruhige, neutrale Grautöne, ein gedämpfter Indigo-Akzent. Keine Verläufe, keine Neonfarben.
+ */
 :root {
-  --background: #f7f7f8;
+  --background: #fafafa;
   --surface: #ffffff;
-  --surface-muted: #f1f2f4;
-  --border: #e4e5e9;
-  --foreground: #16181d;
-  --muted: #646a76;
-  --accent: #0f9f8f;
-  --accent-soft: #e3f6f3;
-  --positive: #15803d;
-  --negative: #c2410c;
-  --warning: #a16207;
+  --surface-muted: #f4f4f5;
+  --border: #e8e8eb;
+  --border-strong: #d6d6db;
+  --foreground: #18181b;
+  --muted: #6b6b74;
+  --subtle: #a1a1aa;
+  --accent: #4a5bc4;
+  --accent-hover: #3f4fae;
+  --accent-soft: #eef0fa;
+  --accent-contrast: #ffffff;
+  --positive: #23784f;
+  --negative: #b4472f;
+  --warning: #96690f;
+  --chart-1: #4a5bc4;
+  --chart-2: #8a8a94;
+  --chart-3: #b4472f;
+  --chart-4: #23784f;
+  --chart-5: #96690f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d0f12;
-    --surface: #15181d;
-    --surface-muted: #1c2027;
-    --border: #2a2f38;
-    --foreground: #eceef2;
-    --muted: #9aa1ad;
-    --accent: #2dd4bf;
-    --accent-soft: #0f2e2b;
-    --positive: #4ade80;
-    --negative: #fb923c;
-    --warning: #facc15;
+    --background: #0f0f11;
+    --surface: #161619;
+    --surface-muted: #1e1e22;
+    --border: #27272c;
+    --border-strong: #36363d;
+    --foreground: #ececef;
+    --muted: #9c9ca5;
+    --subtle: #66666e;
+    --accent: #8e9be6;
+    --accent-hover: #a3aeee;
+    --accent-soft: #1d2034;
+    --accent-contrast: #0f0f11;
+    --positive: #63b78d;
+    --negative: #e08b74;
+    --warning: #d2ad5f;
+    --chart-1: #8e9be6;
+    --chart-2: #8a8a94;
+    --chart-3: #e08b74;
+    --chart-4: #63b78d;
+    --chart-5: #d2ad5f;
   }
 }
 
@@ -35,10 +57,14 @@
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-warning: var(--warning);
@@ -49,6 +75,29 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Einheitlicher, ruhiger Fokusring für Tastaturbedienung */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* Ruhiger, einheitlicher Pfeil statt des Browser-Standards */
+@layer base {
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8a94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.55rem center;
+    background-size: 14px;
+    padding-right: 1.9rem;
+  }
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -58,4 +107,13 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
