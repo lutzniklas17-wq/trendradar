@@ -41,7 +41,8 @@ export async function searchLibrary(form: FormData) {
       ? `${page.products.length} Produkte bei CJ gefunden (${r.added} neu in der Bibliothek), sortiert nach Übernahmen durch Shops.`
       : "CJ hat zu diesem Begriff nichts gefunden. Englische Begriffe funktionieren am besten.";
   } catch (e) {
-    back(e instanceof CjError ? e.message : "Suche fehlgeschlagen. Ist die Migration 0008 gelaufen?");
+    console.error("CJ-Suche fehlgeschlagen", e);
+    back(e instanceof CjError ? e.message : `Suche fehlgeschlagen: ${e instanceof Error ? e.message.slice(0, 200) : "unbekannter Fehler"}`);
   }
   if (follow) {
     await supabase.from("library_terms").upsert({ term, active: true }, { onConflict: "term" });

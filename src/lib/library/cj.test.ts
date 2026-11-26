@@ -90,3 +90,12 @@ describe("parseTokenResponse", () => {
     expect(() => parseTokenResponse({ code: 1601000, result: false, message: "User not find", data: null })).toThrow(/CJ_API_KEY/);
   });
 });
+
+describe("toProduct Grenzfälle", () => {
+  it("begrenzt sehr grosse Zahlen und ignoriert ungültige Zeitstempel", () => {
+    const p = toProduct({ ...raw, warehouseInventoryNum: 99_999_999_999, listedNum: "abc", createAt: 9e18 })!;
+    expect(p.inventory).toBe(2_147_483_647);
+    expect(p.listedCount).toBeNull();
+    expect(p.listedAt).toBeNull();
+  });
+});
