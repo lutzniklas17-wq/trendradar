@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  filterTopics,
+  parseRadarFilters,
+  filterStartups,
+  parseStartupFilters,
   categoryOptions,
   filterItems,
   filterShops,
@@ -90,5 +94,57 @@ describe("resultLabel", () => {
   it("zeigt Anzahl und Gesamtzahl", () => {
     expect(resultLabel(3, 3)).toBe("3 Einträge");
     expect(resultLabel(1, 4, ["Shop", "Shops"])).toBe("1 von 4 Shops");
+  });
+});
+
+describe("Startup-Filter", () => {
+  const now = new Date("2026-11-26T12:00:00Z");
+  const base = { description: null, website_url: null, source_id: "meta_new_advertisers", first_discovered_at: "2026-11-20T00:00:00Z" };
+  const items = [
+    { ...base, name: "Neu", stage: "small_business", launched_at: "2026-11-15T00:00:00Z", relevance: "ecommerce" },
+    { ...base, name: "Alt", stage: "startup", launched_at: "2026-03-01T00:00:00Z", relevance: "unclear", source_id: "product_hunt" },
+    { ...base, name: "Ohne Datum", stage: null, launched_at: null, relevance: "unclear", source_id: "rss" },
+    { ...base, name: "Öl", stage: null, launched_at: "2026-11-20T00:00:00Z", relevance: "excluded" },
+  ];
+
+  it("liest nur bekannte Werte aus der URL", () => {
+    expect(parseStartupFilters({ art: "small_business", gestartet: "30", relevanz: "x", quelle: "rss", sortierung: "start" })).toMatchObject({
+      stage: "small_business",
+      launchedDays: 30,
+      relevance: "",
+      source: "rss",
+      sort: "start",
+    });
+    expect(parseStartupFilters({ gestartet: "45" }).launchedDays).toBeNull();
+  });
+
+  it("blendet ausgeschlossene Branchen immer aus", () => {
+    expect(filterStartups(items, parseStartupFilters({}), now).map((i) => i.name)).not.toContain("Öl");
+  });
+
+  it("filtert nach Start-Datum, Art und Relevanz", () => {
+    expect(filterStartups(items, parseStartupFilters({ gestartet: "30" }), now).map((i) => i.name)).toEqual(["Neu"]);
+    expect(filterStartups(items, parseStartupFilters({ art: "startup" }), now).map((i) => i.name)).toEqual(["Alt"]);
+    expect(filterStartups(items, parseStartupFilters({ relevanz: "ecommerce" }), now).map((i) => i.name)).toEqual(["Neu"]);
+    expect(filterStartups(items, parseStartupFilters({ sortierung: "start" }), now)[0].name).toBe("Neu");
+  });
+});
+
+describe("Radar-Filter", () => {
+  const topics = [
+    { term: "Pilzkaffee", note: null, outlook: "rising", current: 8, previous: 2 },
+    { term: "Rotlicht", note: "Maske", outlook: "stable", current: 10, previous: 9 },
+    { term: "Yoga", note: null, outlook: "too_little", current: 1, previous: 0 },
+  ];
+
+  it("filtert nach Einschätzung und Text", () => {
+    expect(filterTopics(topics, parseRadarFilters({ einschaetzung: "rising" })).map((t) => t.term)).toEqual(["Pilzkaffee"]);
+    expect(filterTopics(topics, parseRadarFilters({ thema: "maske" })).map((t) => t.term)).toEqual(["Rotlicht"]);
+    expect(parseRadarFilters({ einschaetzung: "egal" }).outlook).toBe("");
+  });
+
+  it("sortiert nach Treffern oder Zunahme", () => {
+    expect(filterTopics(topics, parseRadarFilters({})).map((t) => t.term)).toEqual(["Rotlicht", "Pilzkaffee", "Yoga"]);
+    expect(filterTopics(topics, parseRadarFilters({ reihenfolge: "change" }))[0].term).toBe("Pilzkaffee");
   });
 });

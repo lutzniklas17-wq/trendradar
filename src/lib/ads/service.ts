@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMetaEnv } from "@/lib/env";
-import { zurichDay } from "@/lib/shops/shops";
+import { adDomain, zurichDay } from "@/lib/shops/shops";
 import { buildSearchUrl, META_SOURCE_ID, MetaAdError, parseSearchResponse, toMetaError, type AdQuery, type AdSearchResult, type MetaAd } from "@/lib/ads/meta";
 
 export type AdLookup =
@@ -66,22 +66,27 @@ export async function saveAdsWithIds(supabase: SupabaseClient, ads: MetaAd[]): P
   }
 
   const now = new Date().toISOString();
-  const { data: saved, error } = await supabase.from("ads").upsert(
-    ads.map((ad) => ({
-      platform: "meta",
-      external_id: ad.id,
-      advertiser_id: ad.pageId ? (advertiserIds.get(ad.pageId) ?? null) : null,
-      body: ad.bodies[0] ?? null,
-      title: ad.linkTitles[0] ?? null,
-      snapshot_url: ad.libraryUrl,
-      publisher_platforms: ad.platforms,
-      started_at: ad.startedAt,
-      stopped_at: ad.stoppedAt,
-      eu_reach: ad.euReach,
-      fetched_at: now,
-    })),
-    { onConflict: "platform,external_id" },
-  ).select("id, external_id");
+  const rows = ads.map((ad) => ({
+    platform: "meta",
+    external_id: ad.id,
+    advertiser_id: ad.pageId ? (advertiserIds.get(ad.pageId) ?? null) : null,
+    body: ad.bodies[0] ?? null,
+    title: ad.linkTitles[0] ?? null,
+    snapshot_url: ad.libraryUrl,
+    publisher_platforms: ad.platforms,
+    started_at: ad.startedAt,
+    stopped_at: ad.stoppedAt,
+    eu_reach: ad.euReach,
+    fetched_at: now,
+    domain: adDomain(ad),
+  }));
+  const upsert = (list: Record<string, unknown>[]) =>
+    supabase.from("ads").upsert(list, { onConflict: "platform,external_id" }).select("id, external_id");
+  let { data: saved, error } = await upsert(rows);
+  // Ohne Migration 0007 gibt es die Spalte domain noch nicht: dann ohne Domain speichern.
+  if (error && /domain/i.test(error.message ?? "")) {
+    ({ data: saved, error } = await upsert(rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== "domain")))));
+  }
   if (error) return null;
   return new Map((saved ?? []).map((row: { id: string; external_id: string }) => [row.external_id, row.id]));
 }

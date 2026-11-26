@@ -135,6 +135,17 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
 
         <Card>
           <CardHeader
+            title="Neue Shops aus Anzeigen"
+            description="Jeden Tag um ca. 04:40, nach dem Anzeigen-Lauf: Werbetreibende, deren älteste bekannte Anzeige höchstens 60 Tage alt ist, die höchstens 15 Anzeigen haben und auf eine eigene Shop-Domain verlinken. Branchen wie Öl, Finanzen oder B2B-Software werden ausgefiltert. Landet im Startup Spy als „Small Business“. Kostet keine API-Abfrage."
+            action={<RunButton job="startups" label="Jetzt auswerten" />}
+          />
+          <p className="border-t border-border px-5 py-3 text-xs text-muted">
+            Grenze: „bekannt“ heisst in deinen gesammelten Anzeigen. Hat ein Shop früher schon geworben und diese Anzeigen wurden nie gesammelt, wirkt er neuer, als er ist. Je mehr Stichwörter oben, desto mehr Treffer.
+          </p>
+        </Card>
+
+        <Card>
+          <CardHeader
             title="Product Hunt"
             description="Jeden Tag um ca. 05:00: neue Launches der letzten 36 Stunden. Gespeichert werden nur Launches mit Konsum-Themen (z. B. Hardware, Fashion, Home, Beauty, Pets) und ohne klares Software-Thema. Product Hunt ist überwiegend Software, deshalb kommen hier eher wenige Treffer. Landet im Startup Spy."
             action={<RunButton job="producthunt" disabled={!ph} label="Jetzt sammeln" reason="PRODUCTHUNT_TOKEN fehlt" />}

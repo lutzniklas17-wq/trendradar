@@ -117,6 +117,32 @@ pro Stichwort, Shops mit deutlicher Veränderung (mind. 3 Anzeigen und 25 %) ode
 
 **Favoriten:** Produkte über „Zur Watchlist“, Shops über den Stern. Die täglichen Läufe löschen nie etwas aus den Favoriten.
 
+## Startup Spy (kleine, neue E-Commerce-Marken)
+
+Migration `supabase/migrations/0007_startup_spy.sql` im Supabase SQL Editor ausführen, **bevor** der Code live geht.
+
+Quellen, alle legal und kostenlos:
+
+- **Neue Werbetreibende** (Meta Ad Library, aus deinen gesammelten Anzeigen): Seiten, deren älteste bekannte Anzeige höchstens 60 Tage alt ist, mit höchstens 15 Anzeigen und einer eigenen Shop-Domain. Täglich um ca. 04:40 (`/api/cron/collect?job=startups`), braucht keine zusätzliche API-Abfrage. Grenze: „bekannt“ heisst in deinen Daten; ältere, nie gesammelte Anzeigen fehlen.
+- **Product Hunt** (`PRODUCTHUNT_TOKEN`): nur Launches mit Konsum-Themen.
+- **RSS-Feeds** mit Bereich „Startup Spy“.
+
+E-Commerce-Filter (`src/lib/startups/relevance.ts`): feste Regeln, keine KI. Öl und Gas, Bergbau, Industrie, Chemie, Pharma, Finanzen, Krypto, Immobilien, B2B-Software, Beratung, Personal, Rüstung, Logistik werden nicht gespeichert. Konsum-Begriffe oder eine eigene Shop-Domain ergeben „E-Commerce“, sonst „unklar“. Das ist eine Einschätzung und wird so angezeigt.
+
+Nicht eingebaut, mit Grund: Kickstarter und Indiegogo haben keine offene API (Scraping verboten). Das Schweizer Handelsamtsblatt (SHAB) hat eine API für Neueintragungen, deren Doku liess sich hier aber nicht prüfen; folgt erst, wenn sie getestet ist.
+
+## Future Radar (Themen beobachten)
+
+Braucht ebenfalls Migration `0007_startup_spy.sql` (Tabelle `radar_topics`, Abfrage `radar_topic_stats`).
+
+Unter „Future Radar“ eigene Themen eintragen (z. B. „Pilzkaffee“). Pro Thema getrennt angezeigt:
+
+- **Fakten**: Treffer in deinen Daily News (7 Tage, Vorwoche), aktive und neue Anzeigen, wenn es ein gleichnamiges Anzeigen-Stichwort im Datensammler gibt, neue Einträge aus allen Bereichen (30 Tage). Alles aus den eigenen, gesammelten Daten.
+- **Signal**: Veränderung gegenüber der Vorwoche.
+- **Einschätzung**: feste Regeln, keine KI („neu aufgetaucht“, „steigend“, „stabil“, „rückläufig“, „zu wenig Daten“). Unter 3 Treffern oder mit weniger als 14 Tagen News-Verlauf gibt es keine Einschätzung. Logik: `src/lib/radar/assess.ts`.
+
+Darunter bleiben die Einträge aus RSS-Feeds mit Bereich „Future Radar“. Eine KI-Bewertung folgt erst mit `ANTHROPIC_API_KEY`.
+
 ## Lokal entwickeln
 
 ```bash

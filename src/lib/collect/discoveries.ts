@@ -15,7 +15,28 @@ export type Discovery = {
   websiteUrl?: string | null;
   imageUrl?: string | null;
   signal?: { metric: string; value: number; unit?: string } | null;
+  /** Startup (Produktlaunch) oder Small Business (neuer Shop / neue Firma). */
+  stage?: "startup" | "small_business" | null;
+  /** Start laut Quelle (Launch-Datum, älteste bekannte Anzeige). */
+  launchedAt?: string | null;
+  /** E-Commerce-Relevanz nach Regeln (Einschätzung) mit Begründung. */
+  relevance?: { relevance: "ecommerce" | "unclear" | "excluded"; reason: string } | null;
 };
+
+/** Host einer Website ohne „www.“, sonst null. */
+export function websiteHost(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`);
+    return u.hostname.toLowerCase().replace(/^www\./, "") || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Spalten aus Migration 0007. Fehlen sie noch, wird ohne sie gespeichert. */
+const PHASE5_COLUMNS = ["stage", "launched_at", "relevance", "relevance_reason"];
+const missingColumn = (message: string | undefined) => PHASE5_COLUMNS.some((c) => (message ?? "").includes(c));
 
 export type SaveStats = { inserted: number; updated: number; failed: number; added: { id: string; name: string }[] };
 
@@ -60,6 +81,12 @@ export async function saveDiscoveries(supabase: SupabaseClient, list: Discovery[
       continue;
     }
     id = bySource.data?.[0]?.id ?? null;
+    const host = websiteHost(d.websiteUrl);
+    if (!id && host) {
+      // Gleiche Website im selben Bereich (z. B. Product-Hunt-Launch und Anzeigen derselben Marke).
+      const byHost = await supabase.from("items").select("id").eq("area", d.area).ilike("website_url", `%${host}%`).limit(1);
+      id = byHost.data?.[0]?.id ?? null;
+    }
     if (!id && normalizeName(name)) {
       const similar = await supabase.rpc("find_similar_items", { q: name, max_results: 5, min_score: DUPLICATE_SIMILARITY });
       id = pickDuplicate((similar.data ?? []) as Candidate[], d.area);
@@ -73,23 +100,29 @@ export async function saveDiscoveries(supabase: SupabaseClient, list: Discovery[
       }
       stats.updated++;
     } else {
-      const { data, error } = await supabase
-        .from("items")
-        .insert({
-          type: d.type,
-          area: d.area,
-          name,
-          description: clip(d.description, 1000),
-          category: clip(d.category, 100),
-          website_url: clip(d.websiteUrl, 1000),
-          image_url: clip(d.imageUrl, 1000),
-          source_id: d.sourceId,
-          source_url: d.sourceUrl,
-          first_discovered_at: now.toISOString(),
-          last_seen_at: now.toISOString(),
-        })
-        .select("id")
-        .single();
+      const row: Record<string, unknown> = {
+        type: d.type,
+        area: d.area,
+        name,
+        description: clip(d.description, 1000),
+        category: clip(d.category, 100),
+        website_url: clip(d.websiteUrl, 1000),
+        image_url: clip(d.imageUrl, 1000),
+        source_id: d.sourceId,
+        source_url: d.sourceUrl,
+        first_discovered_at: now.toISOString(),
+        last_seen_at: now.toISOString(),
+        stage: d.stage ?? null,
+        launched_at: d.launchedAt ?? null,
+        relevance: d.relevance?.relevance ?? "unclear",
+        relevance_reason: clip(d.relevance?.reason, 300),
+      };
+      const insert = (r: Record<string, unknown>) => supabase.from("items").insert(r).select("id").single();
+      let { data, error } = await insert(row);
+      if (error && missingColumn(error.message)) {
+        for (const c of PHASE5_COLUMNS) delete row[c];
+        ({ data, error } = await insert(row));
+      }
       if (error || !data) {
         stats.failed++;
         continue;

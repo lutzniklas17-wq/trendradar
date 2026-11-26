@@ -1,4 +1,5 @@
 import type { Discovery } from "@/lib/collect/discoveries";
+import { classifyRelevance } from "@/lib/startups/relevance";
 
 // Product Hunt API v2 (GraphQL). Laut Doku: Bearer-Token (Developer Token aus dem API-Dashboard),
 // nur lesend, keine kommerzielle Nutzung (private Nutzung ok), Limit 6250 Komplexitätspunkte pro 15 Minuten.
@@ -99,8 +100,9 @@ const has = (topics: string[], list: string[]) => topics.some((t) => list.includ
  * Product Hunt ist überwiegend Software; physische Produkte sind dort selten. Das ist eine Einschätzung,
  * keine Garantie, und wird später durch die KI-Einstufung ergänzt.
  */
-export function isEcommerceRelevant(post: Pick<PhPost, "topics">) {
-  return has(post.topics, CONSUMER_TOPICS) && !has(post.topics, SOFTWARE_TOPICS);
+export function isEcommerceRelevant(post: Pick<PhPost, "topics"> & Partial<Pick<PhPost, "name" | "tagline">>) {
+  if (!has(post.topics, CONSUMER_TOPICS) || has(post.topics, SOFTWARE_TOPICS)) return false;
+  return classifyRelevance([post.name, post.tagline]).relevance !== "excluded";
 }
 
 export function toDiscovery(post: PhPost): Discovery {
@@ -116,6 +118,11 @@ export function toDiscovery(post: PhPost): Discovery {
     websiteUrl: post.website,
     imageUrl: post.thumbnail,
     signal: post.votesCount !== null ? { metric: "producthunt_votes", value: post.votesCount, unit: "Stimmen" } : null,
+    stage: "startup",
+    launchedAt: post.createdAt,
+    relevance: category
+      ? { relevance: "ecommerce", reason: `Product-Hunt-Thema „${category}“` }
+      : classifyRelevance([post.name, post.tagline]),
   };
 }
 
