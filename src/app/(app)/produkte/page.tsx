@@ -13,13 +13,14 @@ import { LibraryProductRow, ProductCard, type LibraryProduct } from "@/component
 import { QuickChips } from "@/components/ui/quick-chips";
 import { itemAdCounts } from "@/lib/ads/feed";
 import { requireOwner } from "@/lib/auth";
-import { getAnthropicEnv, getCjEnv } from "@/lib/env";
+import { getAliExpressEnv, getAnthropicEnv, getCjEnv } from "@/lib/env";
 import { SUPPLIER_PLATFORMS } from "@/lib/platforms";
 import { LIBRARY_COLUMNS, loadTopHits } from "@/lib/library/load";
 import { zurichDay } from "@/lib/shops/shops";
 import {
   hasLibraryFilters,
   LIBRARY_PAGE_SIZE,
+  LIBRARY_PLATFORMS,
   LIBRARY_PRICES,
   LIBRARY_RELEVANCE,
   LIBRARY_SORTS,
@@ -54,6 +55,13 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const notice = typeof params.hinweis === "string" ? params.hinweis.slice(0, 300) : null;
   const { supabase } = await requireOwner();
   const cj = getCjEnv();
+  const ae = getAliExpressEnv();
+  const anyPlatform = Boolean(cj || ae);
+  const searchPlatforms = [
+    { value: "", label: "Alle verbundenen" },
+    { value: "cj", label: cj ? "CJdropshipping" : "CJdropshipping (nicht verbunden)" },
+    { value: "aliexpress", label: ae ? "AliExpress" : "AliExpress (nicht verbunden)" },
+  ];
   const ai = getAnthropicEnv() !== null;
 
   // Bibliothek mit Filtern (in der Datenbank, damit auch grosse Bestände schnell bleiben)
@@ -62,6 +70,7 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const like = likePattern(filters.text);
   if (like) q = q.ilike("title", like);
   if (filters.term) q = q.contains("search_terms", [filters.term]);
+  if (filters.platform) q = q.eq("platform", filters.platform);
   if (filters.maxPrice) q = q.lte("price", filters.maxPrice);
   if (filters.freeShipping) q = q.eq("free_shipping", true);
   if (filters.relevance === "") q = q.neq("relevance", "irrelevant").or("ai_relevant.is.null,ai_relevant.eq.true");
@@ -98,6 +107,7 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const terms = (termsRes.data ?? []) as Term[];
   const usage = (usageRes.data ?? []) as { provider: string; calls: number; cost_usd: number }[];
   const cjCalls = usage.find((u) => u.provider === "cj")?.calls ?? 0;
+  const aeCalls = usage.find((u) => u.provider === "aliexpress")?.calls ?? 0;
   const aiCost = Number(usage.find((u) => u.provider === "anthropic")?.cost_usd ?? 0);
   const active = hasLibraryFilters(filters);
   const externalQuery = filters.term || filters.text;
@@ -106,12 +116,12 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
     <>
       <PageHeader
         title="Produkte"
-        description="Oben die Top-Hits aus echten Signalen, darunter die ganze Lieferanten-Bibliothek. Quelle: CJdropshipping API, täglich aktualisiert."
+        description="Oben die Top-Hits aus echten Signalen, darunter die ganze Lieferanten-Bibliothek. Quellen: CJdropshipping API und AliExpress Affiliate API (sobald freigegeben), täglich aktualisiert."
       />
 
       {notice ? <Notice tone="neutral">{notice}</Notice> : null}
       {migrationMissing ? <Notice>Die Produkt-Bibliothek ist noch nicht eingerichtet: Migration 0008_product_library.sql in Supabase ausführen.</Notice> : null}
-      {!cj ? (
+      {!anyPlatform ? (
         <Notice tone="neutral">
           Für die Suche fehlt der CJ-Zugang (<code>CJ_API_KEY</code> in Vercel). Das CJ-Konto ist kostenlos, die Anleitung liegt in den Projektdateien. Bis dahin
           funktionieren die Links zu den Lieferanten unten.
@@ -120,24 +130,27 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
 
       {/* Suche */}
       <Card className="mb-8">
-        <form action={searchLibrary} className="grid gap-3 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+        <form action={searchLibrary} className="grid gap-3 p-5 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
           <Field label="Produkt suchen (englisch, z. B. „posture corrector“)">
             <Input name="begriff" defaultValue={filters.term} placeholder="Suchbegriff" required minLength={2} maxLength={80} />
           </Field>
-          <Field label="Lager">
+          <Field label="Plattform">
+            <Select name="plattform" options={searchPlatforms} defaultValue={filters.platform} />
+          </Field>
+          <Field label="Lager (nur CJ)">
             <Select name="lager" options={COUNTRY_OPTIONS} defaultValue="" />
           </Field>
-          <SubmitButton disabled={!cj} title={!cj ? "CJ_API_KEY fehlt" : undefined} pendingLabel="Suche bei CJ …">
-            <PackageSearch className="size-4" aria-hidden /> Bei CJ suchen
+          <SubmitButton disabled={!anyPlatform} title={!anyPlatform ? "Keine Plattform verbunden" : undefined} pendingLabel="Suche läuft …">
+            <PackageSearch className="size-4" aria-hidden /> Suchen
           </SubmitButton>
-          <label className="flex items-center gap-2 text-[13px] text-muted sm:col-span-3">
+          <label className="flex items-center gap-2 text-[13px] text-muted sm:col-span-4">
             <input type="checkbox" name="taeglich" value="1" className="accent-(--accent)" />
             Diesen Begriff täglich automatisch aktualisieren
           </label>
         </form>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border px-5 py-3 text-[13px] text-muted">
           <span>Auch ansehen bei</span>
-          {SUPPLIER_PLATFORMS.filter((p) => p.id !== "cj").map((p) =>
+          {SUPPLIER_PLATFORMS.filter((p) => p.id !== "cj" && !(p.id === "aliexpress" && ae)).map((p) =>
             externalQuery ? (
               <a key={p.id} href={p.searchUrl(externalQuery)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
                 {p.name} <ExternalLink className="size-3" aria-hidden />
@@ -195,6 +208,7 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
           keep={filters.term ? { begriff: filters.term } : {}}
           controls={[{ kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: LIBRARY_SORTS }]}
           groups={[
+            { title: "Plattform", controls: [{ kind: "select", name: "plattform", label: "Plattform", value: filters.platform, options: LIBRARY_PLATFORMS }] },
             { title: "Preis", controls: [{ kind: "select", name: "preis", label: "Einkaufspreis", value: filters.maxPrice ? String(filters.maxPrice) : "", options: LIBRARY_PRICES }] },
             { title: "Relevanz", controls: [{ kind: "select", name: "relevanz", label: "Relevanz", value: filters.relevance, options: LIBRARY_RELEVANCE }] },
             {
@@ -269,10 +283,10 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
       <Card>
         <CardHeader
           title="Tägliches Update"
-          description={`Jeden Morgen holt der Lauf die CJ-Trend- und Neuheitenliste und alle Begriffe unten. Heute ${cjCalls} von ${cj?.dailyLimit ?? 300} CJ-Abfragen genutzt${ai ? `, KI-Kosten heute ${aiCost.toFixed(3)} USD` : ""}.`}
+          description={`Jeden Morgen holt der Lauf die CJ-Trend- und Neuheitenliste und alle Begriffe unten. Heute ${cjCalls} von ${cj?.dailyLimit ?? 300} CJ-Abfragen${ae ? ` und ${aeCalls} von ${ae.dailyLimit} AliExpress-Abfragen` : ""} genutzt${ai ? `, KI-Kosten heute ${aiCost.toFixed(3)} USD` : ""}.`}
           action={
             <form action={runLibraryNow}>
-              <SubmitButton variant="secondary" size="sm" disabled={!cj} title={!cj ? "CJ_API_KEY fehlt" : undefined} pendingLabel="Läuft, bis zu 2 Min. …">
+              <SubmitButton variant="secondary" size="sm" disabled={!anyPlatform} title={!anyPlatform ? "Keine Plattform verbunden" : undefined} pendingLabel="Läuft, bis zu 2 Min. …">
                 <RefreshCw className="size-3.5" aria-hidden /> Jetzt aktualisieren
               </SubmitButton>
             </form>

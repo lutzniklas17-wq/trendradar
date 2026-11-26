@@ -62,6 +62,20 @@ export function getCjEnv() {
   return { apiKey, dailyLimit: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 1000) : 300 };
 }
 
+/** AliExpress Affiliate API (kostenlos nach Freigabe). Nur serverseitig lesen. */
+export function getAliExpressEnv() {
+  const appKey = process.env.ALIEXPRESS_APP_KEY?.trim();
+  const appSecret = process.env.ALIEXPRESS_APP_SECRET?.trim();
+  if (!appKey || !appSecret) return null;
+  const limit = Number(process.env.ALIEXPRESS_DAILY_LIMIT);
+  return {
+    appKey,
+    appSecret,
+    trackingId: process.env.ALIEXPRESS_TRACKING_ID?.trim() || null,
+    dailyLimit: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 5000) : 300,
+  };
+}
+
 /** Claude API für die KI-Bewertung. Ohne Key bleibt die KI aus. Nur serverseitig lesen. */
 export function getAnthropicEnv() {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();

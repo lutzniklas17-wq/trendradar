@@ -56,3 +56,14 @@ describe("topHits", () => {
     expect(topHits(list, new Map(), 1, now)).toHaveLength(1);
   });
 });
+
+describe("Plattform-Texte", () => {
+  it("nennt bei AliExpress Verkäufe statt Übernahmen", async () => {
+    const hit = scoreProduct(
+      { id: "a", platform: "aliexpress", listedCount: 1500, listedAt: null, relevance: "relevant", hidden: false, imageUrl: "https://x/a.jpg", searchTerms: [], aiRelevant: null, aiScore: null, aiReason: null, snapshots: [] },
+      new Map(),
+    );
+    expect(hit?.claims[0].kind).toBe("fact");
+    expect(hit?.claims[0].text).toMatch(/^1.500 Verkäufe zuletzt bei AliExpress$/);
+  });
+});
