@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Einrichtung" };
 export default function SetupPage() {
   return (
     <main className="mx-auto max-w-xl px-4 py-16">
-      <h1 className="text-xl font-semibold">TrendRadar ist noch nicht eingerichtet</h1>
+      <h1 className="text-xl font-medium">TrendRadar ist noch nicht eingerichtet</h1>
       <p className="mt-2 text-sm text-muted">
         Es fehlen die Supabase-Zugangsdaten. Trage in Vercel (oder lokal in <code>.env.local</code>) diese Werte ein und
         starte die App neu:

@@ -4,9 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OfferFormState } from "@/app/(app)/produkt/actions";
-
-const inputClass =
-  "h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
+import { inputClass } from "@/components/ui/field";
 
 export function OfferForm({
   action,
@@ -32,9 +30,9 @@ export function OfferForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4 rounded-xl border border-border bg-surface p-5">
+    <form ref={formRef} action={formAction} className="space-y-4 rounded-lg border border-border bg-surface p-5">
       <div>
-        <p className="text-sm font-semibold">Angebot erfassen</p>
+        <p className="text-sm font-medium">Angebot erfassen</p>
         <p className="text-sm text-muted">
           Werte so eintragen, wie sie auf der Produktseite des Anbieters stehen. Leere Felder bleiben leer und werden
           nicht geschätzt.

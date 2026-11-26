@@ -19,7 +19,7 @@ export function PlatformLogo({
   return (
     <span
       className={cn(
-        "inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-xs font-bold",
+        "inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-xs font-medium",
         className,
       )}
       style={brand ? undefined : { color }}

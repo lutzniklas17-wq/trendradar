@@ -7,7 +7,7 @@ export function SalesChannels({ query }: { query: string }) {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-base font-semibold">Verkaufskanäle</h2>
+        <h2 className="text-base font-medium">Verkaufskanäle</h2>
         <p className="text-sm text-muted">
           Wo du verkaufen könntest. Gebühren ändern sich und hängen von Land und Kategorie ab: bitte auf der offiziellen
           Seite nachlesen und im Rechner unter Shop- / Plattformgebühr eintragen.
@@ -18,7 +18,7 @@ export function SalesChannels({ query }: { query: string }) {
           <Card key={c.id} className="flex flex-col gap-3 p-5">
             <div className="flex items-center gap-3">
               <PlatformLogo icon={c.icon} monogram={c.monogram} color={c.color} name={c.name} />
-              <p className="text-sm font-semibold">{c.name}</p>
+              <p className="text-sm font-medium">{c.name}</p>
             </div>
             <p className="flex-1 text-sm text-muted">{c.description}</p>
             <div className="flex flex-wrap gap-2 text-sm">

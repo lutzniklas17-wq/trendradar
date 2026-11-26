@@ -5,7 +5,7 @@ import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Tabs } from "@/components/ui/tabs";
 import { ProfitCalculator, type ProvenanceMap, type ScenarioState } from "@/components/profit/profit-calculator";
 import { SupplierSection } from "@/components/product/supplier-section";
@@ -138,7 +138,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
         <dl className="grid gap-4 p-5 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted">Günstigstes bestätigtes Angebot ({currency})</dt>
-            <dd className="mt-0.5 font-semibold">
+            <dd className="mt-0.5 font-medium">
               {best ? (
                 <>
                   {formatNumber(best.price!)} {currency}
@@ -152,7 +152,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
           </div>
           <div>
             <dt className="text-muted">Preisreferenz Endkunde</dt>
-            <dd className="mt-0.5 font-semibold">
+            <dd className="mt-0.5 font-medium">
               {referenceOffers.length ? (
                 referenceOffers.map((o) => (
                   <span key={o.id} className="mr-3">
@@ -166,7 +166,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
           </div>
           <div>
             <dt className="text-muted">Bewertung</dt>
-            <dd className="mt-0.5 font-semibold">
+            <dd className="mt-0.5 font-medium">
               {average != null ? `${formatNumber(average, 1)} / 5` : <span className="font-normal text-muted">Noch keine</span>}
               {assessment?.verdict ? (
                 <Badge tone={VERDICTS[assessment.verdict].tone} className="ml-2">
@@ -177,7 +177,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
           </div>
           <div>
             <dt className="text-muted">Lieferantenangebote</dt>
-            <dd className="mt-0.5 font-semibold">{supplierOffers.length}</dd>
+            <dd className="mt-0.5 font-medium">{supplierOffers.length}</dd>
           </div>
         </dl>
         {item.description ? <p className="border-t border-border px-5 py-4 text-sm">{item.description}</p> : null}
@@ -208,7 +208,7 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="font-semibold tabular-nums">
+                  <span className="font-medium tabular-nums">
                     {formatNumber(Number(s.value), Number.isInteger(Number(s.value)) ? 0 : 2)}
                     {s.unit ? ` ${s.unit}` : ""}
                   </span>
@@ -256,10 +256,10 @@ export default async function ProductPage({ params }: PageProps<"/produkt/[id]">
         <form action={toggleWatchlist}>
           <input type="hidden" name="item_id" value={item.id} />
           <input type="hidden" name="watching" value={watching ? "1" : "0"} />
-          <Button type="submit" variant={watching ? "secondary" : "primary"}>
+          <SubmitButton variant={watching ? "secondary" : "primary"} title={watching ? "Klicken, um von der Watchlist zu entfernen" : undefined}>
             {watching ? <BookmarkCheck className="size-4" aria-hidden /> : <Bookmark className="size-4" aria-hidden />}
             {watching ? "Auf der Watchlist" : "Zur Watchlist"}
-          </Button>
+          </SubmitButton>
         </form>
       </PageHeader>
       <div className="-mt-4 mb-6 flex flex-wrap items-center gap-2 text-sm text-muted">

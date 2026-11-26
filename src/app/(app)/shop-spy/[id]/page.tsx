@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ShopChart } from "@/components/shops/shop-chart";
 import { requireOwner } from "@/lib/auth";
 import { getMetaEnv } from "@/lib/env";
@@ -137,7 +137,7 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
             {configured ? (
               <form action={refreshShop}>
                 <input type="hidden" name="id" value={shop.id} />
-                <Button type="submit">Jetzt neu zählen</Button>
+                <SubmitButton pendingLabel="Zähle…">Jetzt neu zählen</SubmitButton>
               </form>
             ) : (
               <span className="text-muted">Meta-API nicht verbunden, Zählen nicht möglich.</span>
@@ -147,9 +147,9 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
             </a>
             <form action={removeShop} className="ml-auto">
               <input type="hidden" name="id" value={shop.id} />
-              <Button type="submit" variant="ghost">
+              <SubmitButton variant="danger" pendingLabel="Wird entfernt…">
                 Nicht mehr verfolgen
-              </Button>
+              </SubmitButton>
             </form>
           </div>
           <p className="border-t border-border px-5 py-3 text-xs text-muted">
@@ -169,7 +169,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
   return (
     <Card className="px-5 py-4">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 text-xl font-medium tabular-nums">{value}</p>
       {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
     </Card>
   );
