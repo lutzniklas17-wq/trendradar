@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getAllowedEmail, getPublicSupabaseEnv } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/setup"];
+// /api/cron prüft selbst ein Geheimnis (CRON_SECRET) und braucht keine Anmeldung.
+const PUBLIC_PATHS = ["/login", "/setup", "/api/cron"];
 
 /** Erneuert die Supabase-Sitzung und leitet nicht angemeldete Besucher zum Login. */
 export async function updateSession(request: NextRequest) {

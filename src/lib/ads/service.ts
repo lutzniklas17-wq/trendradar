@@ -16,8 +16,13 @@ export async function fetchAdsLive(
   creds: { accessToken: string; graphVersion?: string },
   fetchImpl: FetchFn = fetch,
 ): Promise<AdSearchResult> {
-  const url = buildSearchUrl(query, creds.graphVersion);
-  url.searchParams.set("access_token", creds.accessToken);
+  return fetchArchive(buildSearchUrl(query, creds.graphVersion), creds.accessToken, fetchImpl);
+}
+
+/** Ruft eine fertig gebaute ads_archive-URL ab (Token wird hier angehängt) und liest die Antwort aus. */
+export async function fetchArchive(url: URL, accessToken: string, fetchImpl: FetchFn = fetch): Promise<AdSearchResult> {
+  url = new URL(url);
+  url.searchParams.set("access_token", accessToken);
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(30_000), cache: "no-store" });
   let json: unknown;
   try {
@@ -72,6 +77,15 @@ export async function saveAds(supabase: SupabaseClient, ads: MetaAd[]): Promise<
 }
 
 /** Sucht Anzeigen live bei Meta und speichert die Treffer. Die API ist kostenlos, hat aber ein Abfragelimit pro Stunde. */
+/** Übersetzt beliebige Fehler beim Abruf in eine verständliche Meldung. */
+export function metaErrorMessage(e: unknown) {
+  return e instanceof MetaAdError
+    ? e.message
+    : e instanceof Error && e.name === "TimeoutError"
+      ? "Meta hat nicht rechtzeitig geantwortet."
+      : "Meta ist nicht erreichbar.";
+}
+
 export async function searchAds(supabase: SupabaseClient, query: AdQuery, fetchImpl?: FetchFn): Promise<AdLookup> {
   const env = getMetaEnv();
   if (!env) return { status: "not_configured" };
@@ -81,12 +95,7 @@ export async function searchAds(supabase: SupabaseClient, query: AdQuery, fetchI
     await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", META_SOURCE_ID);
     return { status: "ok", result, fetchedAt: new Date().toISOString(), saved };
   } catch (e) {
-    const message =
-      e instanceof MetaAdError
-        ? e.message
-        : e instanceof Error && e.name === "TimeoutError"
-          ? "Meta hat nicht rechtzeitig geantwortet."
-          : "Meta ist nicht erreichbar.";
+    const message = metaErrorMessage(e);
     await supabase
       .from("sources")
       .update({ last_error_at: new Date().toISOString(), last_error: message.slice(0, 500) })
