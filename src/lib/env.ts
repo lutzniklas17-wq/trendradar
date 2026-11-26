@@ -52,3 +52,20 @@ export function getProductHuntEnv() {
   const token = process.env.PRODUCTHUNT_TOKEN?.trim();
   return token ? { token } : null;
 }
+
+/** Zugang zur CJdropshipping API (kostenlos mit CJ-Konto). Nur serverseitig lesen. */
+export function getCjEnv() {
+  const apiKey = process.env.CJ_API_KEY?.trim();
+  if (!apiKey) return null;
+  const limit = Number(process.env.CJ_DAILY_LIMIT);
+  // CJ erlaubt kostenlosen Konten 1000 Anfragen pro Tag; Standard bewusst tiefer.
+  return { apiKey, dailyLimit: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 1000) : 300 };
+}
+
+/** Claude API für die KI-Bewertung. Ohne Key bleibt die KI aus. Nur serverseitig lesen. */
+export function getAnthropicEnv() {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) return null;
+  const budget = Number(process.env.AI_MONTHLY_BUDGET_USD);
+  return { apiKey, monthlyBudgetUsd: Number.isFinite(budget) && budget > 0 ? Math.min(budget, 100) : 5 };
+}

@@ -32,6 +32,8 @@ import { searchAds, type AdLookup } from "@/lib/ads/service";
 import { trackShop } from "../shop-spy/actions";
 import { addWatchTerm } from "../sammler/actions";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
+import { AdCard, AdGrid } from "@/components/ads/ad-card";
+import { loadAdCards } from "@/lib/ads/feed";
 
 export const metadata: Metadata = { title: "Ad Spy" };
 
@@ -141,7 +143,7 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
   );
 }
 
-function Results({
+async function Results({
   lookup,
   query,
   countryLabel,
@@ -155,6 +157,13 @@ function Results({
   const { ads, nextCursor } = lookup.result;
   const now = new Date(lookup.fetchedAt);
   const groups = groupByAdvertiser(ads, now).filter((g) => g.count > 1);
+  // Gespeicherte Treffer als Karten (mit Vorschau und Analyse), nicht gespeicherte als einfache Zeile.
+  const { supabase } = await requireOwner();
+  const internal = ads.map((a) => lookup.ids[a.id]).filter((x): x is string => Boolean(x));
+  const { cards } = await loadAdCards(supabase, internal, new Map(internal.map((id) => [id, [query.country]])));
+  const shown = new Set(cards.map((c) => c.external_id));
+  const leftovers = ads.filter((a) => !shown.has(a.id));
+  const canEmbed = Boolean(getMetaEnv());
   const nextHref = nextCursor
     ? `/ad-spy?${new URLSearchParams({ q: query.terms, land: query.country, status: query.status, plattform: query.platform, art: query.searchType, nach: nextCursor })}`
     : null;
@@ -194,11 +203,20 @@ function Results({
           }
         />
         {ads.length ? (
-          <ul className="divide-y divide-border">
-            {ads.map((ad) => (
-              <AdRow key={ad.id} ad={ad} now={now} />
-            ))}
-          </ul>
+          <div className="border-b border-border bg-background p-4">
+            <AdGrid>
+              {cards.map((c) => (
+                <AdCard key={c.id} ad={c} canEmbed={canEmbed} />
+              ))}
+            </AdGrid>
+            {leftovers.length ? (
+              <ul className="mt-4 divide-y divide-border rounded-lg border border-border bg-surface">
+                {leftovers.map((ad) => (
+                  <AdRow key={ad.id} ad={ad} now={now} />
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : (
           <EmptyState icon={Megaphone} title="Keine Anzeigen gefunden">
             Meta hat für diese Suche in {countryLabel} keine Anzeigen geliefert. Andere Schreibweise oder Sprache versuchen.

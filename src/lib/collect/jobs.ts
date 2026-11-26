@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
 import { buildSearchUrl, EU_COUNTRIES, META_SOURCE_ID, PAGE_ADS_LIMIT, type AdCountry, type MetaAd } from "@/lib/ads/meta";
 import { fetchArchive, metaErrorMessage, recordSightings, saveAdsWithIds } from "@/lib/ads/service";
 import { zurichDay } from "@/lib/shops/shops";
@@ -15,10 +15,13 @@ import {
   toNewAdvertiserDiscovery,
   type NewAdvertiserRow,
 } from "@/lib/startups/new-advertisers";
+import { CJ_FLAG, CJ_ORDER, CJ_SOURCE_ID, CjError, type CjQuery } from "@/lib/library/cj";
+import { saveProducts, searchCj } from "@/lib/library/service";
+import { runProductReview } from "@/lib/ai/review";
 
 type FetchFn = typeof fetch;
 
-export const JOBS = ["ads", "startups", "producthunt", "rss", "news"] as const;
+export const JOBS = ["ads", "startups", "producthunt", "rss", "news", "library", "ai"] as const;
 export type Job = (typeof JOBS)[number];
 export const isJob = (v: unknown): v is Job => typeof v === "string" && (JOBS as readonly string[]).includes(v);
 
@@ -369,10 +372,79 @@ export async function runNews(supabase: SupabaseClient, { fetchImpl, now = new D
   return r;
 }
 
+/** Abfragen pro täglichem Bibliothekslauf (CJ: 1 pro Sekunde, Funktion max. 300 s). */
+export const LIBRARY_MAX_QUERIES = 60;
+
+/**
+ * Täglicher Lauf der Produkt-Bibliothek: zuerst CJ-Trend- und Neuheitenliste, dann deine Suchbegriffe
+ * (die am längsten nicht gelaufenen zuerst), jeweils nach Übernahmen durch Shops sortiert.
+ */
+export async function runLibrary(supabase: SupabaseClient, opts: { fetchImpl?: FetchFn } = {}): Promise<JobResult> {
+  const started = new Date();
+  if (!getCjEnv()) return { job: "library", status: "skipped", message: "CJ_API_KEY fehlt.", newItems: 0 };
+  const { data } = await supabase.from("library_terms").select("id, term, last_run_at").eq("active", true).order("last_run_at", { ascending: true, nullsFirst: true });
+  const terms = (data ?? []) as { id: string; term: string }[];
+  const tasks: { label: string; query: CjQuery; termId?: string; term?: string }[] = [
+    { label: "CJ Trend", query: { flag: CJ_FLAG.trending, orderBy: CJ_ORDER.listed } },
+    { label: "CJ neu", query: { flag: CJ_FLAG.new, orderBy: CJ_ORDER.listed } },
+    ...terms.map((t) => ({ label: t.term, query: { keyword: t.term, orderBy: CJ_ORDER.listed }, termId: t.id, term: t.term })),
+  ];
+
+  let added = 0;
+  let saved = 0;
+  let done = 0;
+  let stopped: string | null = null;
+  const deadline = started.getTime() + 240_000;
+  for (const task of tasks) {
+    // je Aufgabe bis zu 2 Abfragen (Token + Liste)
+    if (done * 2 >= LIBRARY_MAX_QUERIES || Date.now() > deadline) {
+      stopped = "Zeit- oder Abfragebudget für heute aufgebraucht, der Rest folgt morgen.";
+      break;
+    }
+    try {
+      const page = await searchCj(supabase, task.query, opts.fetchImpl);
+      const r = await saveProducts(supabase, page.products, task.term ?? null);
+      added += r.added;
+      saved += r.saved;
+      if (task.termId) await supabase.from("library_terms").update({ last_run_at: new Date().toISOString(), last_count: page.products.length, last_error: null }).eq("id", task.termId);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unbekannter Fehler";
+      if (task.termId) await supabase.from("library_terms").update({ last_run_at: new Date().toISOString(), last_error: message.slice(0, 300) }).eq("id", task.termId);
+      if (e instanceof CjError && (e.kind === "auth" || e.kind === "limit")) {
+        stopped = message;
+        break;
+      }
+    }
+    done++;
+  }
+  await markSource(supabase, CJ_SOURCE_ID, done === 0 && stopped ? stopped : null);
+  const r: JobResult = {
+    job: "library",
+    status: done === 0 && stopped ? "failed" : stopped ? "partial" : "success",
+    message: `${done} von ${tasks.length} Abfragen, ${saved} Produkte aktualisiert, ${added} neu` + (stopped ? `. ${stopped}` : "."),
+    newItems: added,
+    details: { done, saved, added },
+  };
+  await logRun(supabase, started, r);
+  return r;
+}
+
+/** Täglicher KI-Lauf (nur mit ANTHROPIC_API_KEY, mit Tagesbudget). */
+export async function runAi(supabase: SupabaseClient): Promise<JobResult> {
+  const started = new Date();
+  const run = await runProductReview(supabase, started);
+  if (run.status !== "skipped" || run.message.includes("Budget")) await markSource(supabase, "anthropic", run.status === "failed" ? run.message : null);
+  const r: JobResult = { job: "ai", status: run.status, message: run.message, newItems: 0, details: { reviewed: run.reviewed, costUsd: run.costUsd } };
+  await logRun(supabase, started, r);
+  return r;
+}
+
 export function runJob(supabase: SupabaseClient, job: Job, opts: { fetchImpl?: FetchFn; max?: number } = {}) {
   if (job === "ads") return runAdSweep(supabase, opts);
   if (job === "startups") return runStartups(supabase);
   if (job === "producthunt") return runProductHunt(supabase, opts);
   if (job === "news") return runNews(supabase, opts);
+  if (job === "library") return runLibrary(supabase, opts);
+  if (job === "ai") return runAi(supabase);
   return runFeeds(supabase, opts);
 }
