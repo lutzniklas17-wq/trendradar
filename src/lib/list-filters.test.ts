@@ -165,4 +165,12 @@ describe("Produkt-Bibliothek", () => {
     expect(likePattern("  ")).toBeNull();
     expect(libraryQuery(parseLibraryFilters({ begriff: "fan", preis: "5" }), 2)).toBe("begriff=fan&preis=5&seite=2");
   });
+  it("filtert nach Plattform und ignoriert unbekannte", async () => {
+    const { hasLibraryFilters, libraryQuery, parseLibraryFilters } = await import("./list-filters");
+    const f = parseLibraryFilters({ plattform: "aliexpress" });
+    expect(f.platform).toBe("aliexpress");
+    expect(hasLibraryFilters(f)).toBe(true);
+    expect(libraryQuery(f, 1)).toBe("plattform=aliexpress");
+    expect(parseLibraryFilters({ plattform: "temu" }).platform).toBe("");
+  });
 });

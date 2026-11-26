@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
-import { getAnthropicEnv, getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { getAliExpressEnv, getAnthropicEnv, getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
 import { AD_COUNTRIES } from "@/lib/ads/meta";
 import { addFeed, addWatchTerm, removeFeed, removeWatchTerm, runCollectorNow, toggleWatchTerm } from "./actions";
 
@@ -43,6 +43,7 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
   const meta = getMetaEnv() !== null;
   const ph = getProductHuntEnv() !== null;
   const cj = getCjEnv() !== null;
+  const ae = getAliExpressEnv() !== null;
   const ai = getAnthropicEnv() !== null;
 
   const [termsRes, feedsRes, runsRes] = await Promise.all([
@@ -137,12 +138,13 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
 
         <Card>
           <CardHeader
-            title="Produkt-Bibliothek (CJdropshipping)"
-            description="Jeden Tag um ca. 03:30: CJ-Trend- und Neuheitenliste plus deine Suchbegriffe von der Seite „Produkte“, sortiert nach Übernahmen durch Shops. Steine, Rohstoffe, Ersatz- und Elektronikteile werden per Regel ausgeblendet."
-            action={<RunButton job="library" disabled={!cj} label="Jetzt sammeln" reason="CJ_API_KEY fehlt" />}
+            title="Produkt-Bibliothek (CJdropshipping, AliExpress)"
+            description="Jeden Tag um ca. 03:30: CJ-Trend- und Neuheitenliste plus deine Suchbegriffe von der Seite „Produkte“ bei jeder verbundenen Plattform, sortiert nach Beliebtheit. Steine, Rohstoffe, Ersatz- und Elektronikteile werden per Regel ausgeblendet."
+            action={<RunButton job="library" disabled={!cj && !ae} label="Jetzt sammeln" reason="Keine Plattform verbunden" />}
           />
           <p className="border-t border-border px-5 py-3 text-xs text-muted">
-            {cj ? "Verbunden. Kostenlos, höchstens 1 Abfrage pro Sekunde und ein Tageslimit (CJ_DAILY_LIMIT, Standard 300)." : "Noch nicht verbunden: CJ_API_KEY in Vercel eintragen (Anleitung in den Projektdateien)."}
+            {cj ? "CJdropshipping verbunden (Tageslimit CJ_DAILY_LIMIT, Standard 300). " : "CJdropshipping nicht verbunden: CJ_API_KEY fehlt. "}
+            {ae ? "AliExpress verbunden (Tageslimit ALIEXPRESS_DAILY_LIMIT, Standard 300)." : "AliExpress nicht verbunden: Schlüssel nach Freigabe in Vercel eintragen (Anleitung in den Projektdateien)."}
           </p>
         </Card>
 

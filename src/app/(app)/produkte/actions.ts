@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
-import { CJ_ORDER, CJ_SOURCE_ID, CjError } from "@/lib/library/cj";
-import { saveProducts, searchCj } from "@/lib/library/service";
+import { connectedPlatforms, saveProducts, searchPlatform } from "@/lib/library/service";
+import { isLibraryPlatform, librarySource, SupplierError, type LibraryPlatform } from "@/lib/library/sources";
 import { runLibrary } from "@/lib/collect/jobs";
 
 // Server Actions sind öffentlich erreichbare Endpunkte: jede prüft selbst die Sitzung und alle Eingaben.
@@ -21,35 +21,43 @@ function back(hinweis: string, extra: Record<string, string> = {}): never {
   redirect(`/produkte?${new URLSearchParams({ ...extra, hinweis })}`);
 }
 
-/** Live-Suche bei CJ: speichert die Treffer in der Bibliothek und zeigt sie an. */
+/** Live-Suche bei einer oder allen verbundenen Plattformen: speichert die Treffer in der Bibliothek und zeigt sie an. */
 export async function searchLibrary(form: FormData) {
   const { supabase } = await requireOwner();
   const term = field(form, "begriff", 80).toLowerCase();
   const country = field(form, "lager", 2).toUpperCase();
+  const wanted = field(form, "plattform", 20);
   const follow = form.get("taeglich") === "1";
   if (term.length < 2) back("Bitte einen Suchbegriff mit mindestens 2 Zeichen eingeben.");
-  let message: string;
-  try {
-    const page = await searchCj(supabase, {
-      keyword: term,
-      orderBy: CJ_ORDER.listed,
-      countryCode: COUNTRIES.includes(country) && country ? country : undefined,
-    });
-    const r = await saveProducts(supabase, page.products, term);
-    await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", CJ_SOURCE_ID);
-    message = page.products.length
-      ? `${page.products.length} Produkte bei CJ gefunden (${r.added} neu in der Bibliothek), sortiert nach Übernahmen durch Shops.`
-      : "CJ hat zu diesem Begriff nichts gefunden. Englische Begriffe funktionieren am besten.";
-  } catch (e) {
-    console.error("CJ-Suche fehlgeschlagen", e);
-    back(e instanceof CjError ? e.message : `Suche fehlgeschlagen: ${e instanceof Error ? e.message.slice(0, 200) : "unbekannter Fehler"}`);
+  const connected = connectedPlatforms();
+  const platforms: LibraryPlatform[] = isLibraryPlatform(wanted) ? [wanted] : connected;
+  if (!platforms.length) back("Keine Plattform verbunden. Zuerst CJ_API_KEY (oder die AliExpress-Schlüssel) in Vercel eintragen.");
+  const missing = platforms.filter((p) => !connected.includes(p));
+  if (missing.length) back(`${librarySource(missing[0])?.name} ist noch nicht verbunden: Schlüssel fehlen in Vercel.`);
+
+  const parts: string[] = [];
+  const errors: string[] = [];
+  for (const platform of platforms) {
+    const name = librarySource(platform)?.name ?? platform;
+    try {
+      const page = await searchPlatform(supabase, platform, { keyword: term, country: COUNTRIES.includes(country) && country ? country : undefined });
+      const r = await saveProducts(supabase, platform, page.products, term);
+      const sourceId = librarySource(platform)?.sourceId;
+      if (sourceId) await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", sourceId);
+      parts.push(`${name}: ${page.products.length} Treffer (${r.added} neu)`);
+    } catch (e) {
+      console.error(`Suche bei ${name} fehlgeschlagen`, e);
+      errors.push(e instanceof SupplierError ? `${name}: ${e.message}` : `${name}: ${e instanceof Error ? e.message.slice(0, 200) : "unbekannter Fehler"}`);
+    }
   }
+  if (!parts.length) back(errors.join(" ") || "Suche fehlgeschlagen.");
+  let message = `${parts.join(", ")}.` + (errors.length ? ` Fehler bei ${errors.join(" ")}` : "");
   if (follow) {
     await supabase.from("library_terms").upsert({ term, active: true }, { onConflict: "term" });
     message += " Der Begriff wird ab jetzt täglich aktualisiert.";
   }
   revalidatePath("/produkte");
-  back(message, { begriff: term });
+  back(message, platforms.length === 1 ? { begriff: term, plattform: platforms[0] } : { begriff: term });
 }
 
 export async function addLibraryTerm(form: FormData) {
@@ -87,11 +95,13 @@ export async function adoptProduct(form: FormData) {
   if (!UUID.test(id)) back("Ungültiges Produkt.");
   const { data: p } = await supabase
     .from("supplier_products")
-    .select("id, title, image_url, price, currency, category, product_url, item_id, listed_count")
+    .select("id, platform, title, image_url, price, currency, category, product_url, item_id, listed_count")
     .eq("id", id)
     .maybeSingle();
   if (!p) back("Produkt nicht gefunden.");
   if (p.item_id) redirect(`/produkt/${p.item_id}`);
+  const source = librarySource(p.platform);
+  const sourceName = source?.name ?? p.platform;
 
   const { data: item, error } = await supabase
     .from("items")
@@ -101,9 +111,12 @@ export async function adoptProduct(form: FormData) {
       name: p.title.slice(0, 200),
       category: p.category,
       image_url: p.image_url,
-      source_id: CJ_SOURCE_ID,
+      source_id: source?.sourceId ?? null,
       source_url: p.product_url,
-      description: p.listed_count !== null ? `Aus der Produkt-Bibliothek (CJdropshipping, ${p.listed_count}× von Shops übernommen).` : "Aus der Produkt-Bibliothek (CJdropshipping).",
+      description:
+        p.listed_count !== null && source
+          ? `Aus der Produkt-Bibliothek (${sourceName}, ${p.listed_count}× ${source.popularity}).`
+          : `Aus der Produkt-Bibliothek (${sourceName}).`,
     })
     .select("id")
     .single();
@@ -111,10 +124,11 @@ export async function adoptProduct(form: FormData) {
 
   await supabase.from("product_offers").insert({
     item_id: item.id,
-    platform: "cj",
+    platform: p.platform,
     role: "supplier",
     url: p.product_url,
-    is_search_link: true,
+    // CJ: Link ist eine Suche nach der SKU; AliExpress: direkte Produktseite
+    is_search_link: p.platform === "cj",
     match_status: "confirmed",
     price: p.price,
     currency: p.currency,

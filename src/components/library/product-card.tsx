@@ -3,12 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { Claim } from "@/lib/library/top-hits";
+import { librarySource } from "@/lib/library/sources";
 import { cn } from "@/lib/utils";
 import { ProductRow } from "@/components/library/product-row";
 import { adoptProduct, toggleHidden } from "@/app/(app)/produkte/actions";
 
 export type LibraryProduct = {
   id: string;
+  /** Plattform, von der das Produkt stammt (`cj`, `aliexpress`, siehe LIBRARY_SOURCES). */
+  platform: string;
   title: string;
   image_url: string | null;
   price: number | null;
@@ -74,12 +77,15 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-sm font-medium tabular-nums">{p.price !== null ? money(p.price, p.currency) : "Preis fehlt"}</span>
           {p.listed_count !== null ? (
-            <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums" title="So oft haben Shops das Produkt bei CJ übernommen (Quelle: CJ API)">
+            <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums" title={librarySource(p.platform)?.popularityHint}>
               <Users className="size-3" aria-hidden /> {count.format(p.listed_count)}
             </span>
           ) : null}
         </div>
-        {p.category_path ? <p className="truncate text-xs text-subtle">{p.category_path}</p> : null}
+        <p className="truncate text-xs text-subtle">
+          {librarySource(p.platform)?.name ?? p.platform}
+          {p.category_path ? ` · ${p.category_path}` : ""}
+        </p>
 
         <div className="flex flex-wrap gap-1">
           {p.free_shipping ? (
@@ -139,8 +145,8 @@ function ProductActions({ product: p, full = true }: { product: LibraryProduct; 
               target="_blank"
               rel="noopener noreferrer"
               className={buttonClass("ghost", "sm", "px-1.5")}
-              title="Bei CJdropshipping ansehen"
-              aria-label="Bei CJdropshipping ansehen"
+              title={`Bei ${librarySource(p.platform)?.name ?? "Lieferant"} ansehen`}
+              aria-label={`Bei ${librarySource(p.platform)?.name ?? "Lieferant"} ansehen`}
             >
               <ExternalLink className="size-3.5" aria-hidden />
             </a>
@@ -171,7 +177,7 @@ export function LibraryProductRow({
     <ProductRow
       rank={rank}
       muted={p.hidden}
-      product={{ ...p, supplier: "CJdropshipping" }}
+      product={{ ...p, supplier: librarySource(p.platform)?.name ?? p.platform }}
       ads={ads}
       adsHint={p.item_id ? "Noch keine Anzeigen. Stichwort im Datensammler anlegen." : "Übernehmen, um Anzeigen zu diesem Produkt zu sammeln."}
       badges={

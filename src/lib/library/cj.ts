@@ -5,6 +5,8 @@
  * Grenzen laut Doku: 1 Anfrage pro Sekunde, kostenlose Konten max. 1000 Anfragen pro Tag.
  */
 
+import { SupplierError, type SupplierErrorKind, type SupplierPage, type SupplierProduct } from "@/lib/library/sources";
+
 export const CJ_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 export const CJ_SOURCE_ID = "cj_dropshipping";
 /** Mindestabstand zwischen zwei Anfragen (QPS = 1 laut Doku, mit etwas Reserve). */
@@ -27,31 +29,12 @@ export type CjQuery = {
   maxPrice?: number;
 };
 
-export type CjProduct = {
-  externalId: string;
-  sku: string | null;
-  title: string;
-  imageUrl: string | null;
-  price: number | null;
-  category: string | null;
-  categoryPath: string | null;
-  listedCount: number | null;
-  inventory: number | null;
-  freeShipping: boolean | null;
-  hasVideo: boolean | null;
-  supplierName: string | null;
-  listedAt: string | null;
-  productUrl: string;
-};
+export type CjProduct = SupplierProduct;
+export type CjPage = SupplierPage;
 
-export type CjPage = { products: CjProduct[]; total: number; page: number; totalPages: number };
-
-export class CjError extends Error {
-  constructor(
-    message: string,
-    readonly kind: "auth" | "limit" | "request" | "network",
-  ) {
-    super(message);
+export class CjError extends SupplierError {
+  constructor(message: string, kind: SupplierErrorKind) {
+    super(message, kind);
     this.name = "CjError";
   }
 }
@@ -117,6 +100,7 @@ export function toProduct(raw: Record<string, unknown>): CjProduct | null {
     title: title.slice(0, 300),
     imageUrl: httpsImage(raw.bigImage ?? raw.productImage),
     price: num(raw.nowPrice) ?? num(raw.sellPrice),
+    currency: "USD",
     category: path.at(-1) ?? str(raw.categoryName),
     categoryPath: path.length ? path.join(" / ") : str(raw.categoryName),
     listedCount: listed,

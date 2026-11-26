@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { getAliExpressEnv, getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
 import { buildSearchUrl, EU_COUNTRIES, META_SOURCE_ID, PAGE_ADS_LIMIT, type AdCountry, type MetaAd } from "@/lib/ads/meta";
 import { fetchArchive, metaErrorMessage, recordSightings, saveAdsWithIds } from "@/lib/ads/service";
 import { zurichDay } from "@/lib/shops/shops";
@@ -15,8 +15,10 @@ import {
   toNewAdvertiserDiscovery,
   type NewAdvertiserRow,
 } from "@/lib/startups/new-advertisers";
-import { CJ_FLAG, CJ_ORDER, CJ_SOURCE_ID, CjError, type CjQuery } from "@/lib/library/cj";
-import { saveProducts, searchCj } from "@/lib/library/service";
+import { CJ_FLAG, CJ_ORDER, CJ_SOURCE_ID, type CjQuery } from "@/lib/library/cj";
+import { saveProducts, searchAliExpress, searchCj } from "@/lib/library/service";
+import { AE_SORT } from "@/lib/library/aliexpress";
+import { SupplierError, type LibraryPlatform } from "@/lib/library/sources";
 import { runProductReview } from "@/lib/ai/review";
 
 type FetchFn = typeof fetch;
@@ -381,47 +383,64 @@ export const LIBRARY_MAX_QUERIES = 60;
  */
 export async function runLibrary(supabase: SupabaseClient, opts: { fetchImpl?: FetchFn } = {}): Promise<JobResult> {
   const started = new Date();
-  if (!getCjEnv()) return { job: "library", status: "skipped", message: "CJ_API_KEY fehlt.", newItems: 0 };
+  const cj = Boolean(getCjEnv());
+  const ae = Boolean(getAliExpressEnv());
+  if (!cj && !ae) return { job: "library", status: "skipped", message: "Keine Plattform verbunden (CJ_API_KEY oder AliExpress-Schlüssel fehlen).", newItems: 0 };
   const { data } = await supabase.from("library_terms").select("id, term, last_run_at").eq("active", true).order("last_run_at", { ascending: true, nullsFirst: true });
   const terms = (data ?? []) as { id: string; term: string }[];
-  const tasks: { label: string; query: CjQuery; termId?: string; term?: string }[] = [
-    { label: "CJ Trend", query: { flag: CJ_FLAG.trending, orderBy: CJ_ORDER.listed } },
-    { label: "CJ neu", query: { flag: CJ_FLAG.new, orderBy: CJ_ORDER.listed } },
-    ...terms.map((t) => ({ label: t.term, query: { keyword: t.term, orderBy: CJ_ORDER.listed }, termId: t.id, term: t.term })),
-  ];
+  type Task = { platform: LibraryPlatform; label: string; cj?: CjQuery; termId?: string; term?: string; cost: number };
+  const tasks: Task[] = [];
+  if (cj) {
+    // je CJ-Aufgabe bis zu 2 Abfragen (Token + Liste)
+    tasks.push({ platform: "cj", label: "CJ Trend", cj: { flag: CJ_FLAG.trending, orderBy: CJ_ORDER.listed }, cost: 2 });
+    tasks.push({ platform: "cj", label: "CJ neu", cj: { flag: CJ_FLAG.new, orderBy: CJ_ORDER.listed }, cost: 2 });
+  }
+  for (const t of terms) {
+    if (cj) tasks.push({ platform: "cj", label: t.term, cj: { keyword: t.term, orderBy: CJ_ORDER.listed }, termId: t.id, term: t.term, cost: 2 });
+    if (ae) tasks.push({ platform: "aliexpress", label: t.term, termId: t.id, term: t.term, cost: 1 });
+  }
 
   let added = 0;
   let saved = 0;
   let done = 0;
+  let used = 0;
   let stopped: string | null = null;
+  const blocked = new Set<LibraryPlatform>();
+  const errors = new Map<LibraryPlatform, string>();
   const deadline = started.getTime() + 240_000;
   for (const task of tasks) {
-    // je Aufgabe bis zu 2 Abfragen (Token + Liste)
-    if (done * 2 >= LIBRARY_MAX_QUERIES || Date.now() > deadline) {
+    if (blocked.has(task.platform)) continue;
+    if (used + task.cost > LIBRARY_MAX_QUERIES || Date.now() > deadline) {
       stopped = "Zeit- oder Abfragebudget für heute aufgebraucht, der Rest folgt morgen.";
       break;
     }
+    used += task.cost;
     try {
-      const page = await searchCj(supabase, task.query, opts.fetchImpl);
-      const r = await saveProducts(supabase, page.products, task.term ?? null);
+      const page =
+        task.platform === "aliexpress"
+          ? await searchAliExpress(supabase, { keyword: task.term ?? "", sort: AE_SORT.volume }, opts.fetchImpl)
+          : await searchCj(supabase, task.cj ?? {}, opts.fetchImpl);
+      const r = await saveProducts(supabase, task.platform, page.products, task.term ?? null);
       added += r.added;
       saved += r.saved;
       if (task.termId) await supabase.from("library_terms").update({ last_run_at: new Date().toISOString(), last_count: page.products.length, last_error: null }).eq("id", task.termId);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Unbekannter Fehler";
       if (task.termId) await supabase.from("library_terms").update({ last_run_at: new Date().toISOString(), last_error: message.slice(0, 300) }).eq("id", task.termId);
-      if (e instanceof CjError && (e.kind === "auth" || e.kind === "limit")) {
-        stopped = message;
-        break;
+      if (e instanceof SupplierError && (e.kind === "auth" || e.kind === "limit")) {
+        // Diese Plattform heute nicht weiter abfragen, die andere läuft weiter.
+        blocked.add(task.platform);
+        errors.set(task.platform, message);
       }
     }
     done++;
   }
-  await markSource(supabase, CJ_SOURCE_ID, done === 0 && stopped ? stopped : null);
+  if (cj) await markSource(supabase, CJ_SOURCE_ID, errors.get("cj") ?? null);
+  const problems = [...errors.values(), ...(stopped ? [stopped] : [])];
   const r: JobResult = {
     job: "library",
-    status: done === 0 && stopped ? "failed" : stopped ? "partial" : "success",
-    message: `${done} von ${tasks.length} Abfragen, ${saved} Produkte aktualisiert, ${added} neu` + (stopped ? `. ${stopped}` : "."),
+    status: done === 0 && problems.length ? "failed" : problems.length ? "partial" : "success",
+    message: `${done} von ${tasks.length} Abfragen, ${saved} Produkte aktualisiert, ${added} neu` + (problems.length ? `. ${problems.join(" ")}` : "."),
     newItems: added,
     details: { done, saved, added },
   };
