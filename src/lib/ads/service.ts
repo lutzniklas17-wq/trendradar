@@ -1,0 +1,96 @@
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getMetaEnv } from "@/lib/env";
+import { buildSearchUrl, META_SOURCE_ID, MetaAdError, parseSearchResponse, toMetaError, type AdQuery, type AdSearchResult, type MetaAd } from "@/lib/ads/meta";
+
+export type AdLookup =
+  | { status: "ok"; result: AdSearchResult; fetchedAt: string; saved: boolean }
+  | { status: "not_configured" }
+  | { status: "error"; message: string };
+
+type FetchFn = typeof fetch;
+
+/** Ruft die Ad Library API ab. Das Token steht nur in der Anfrage an Meta und wird nirgends gespeichert oder geloggt. */
+export async function fetchAdsLive(
+  query: AdQuery,
+  creds: { accessToken: string; graphVersion?: string },
+  fetchImpl: FetchFn = fetch,
+): Promise<AdSearchResult> {
+  const url = buildSearchUrl(query, creds.graphVersion);
+  url.searchParams.set("access_token", creds.accessToken);
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(30_000), cache: "no-store" });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    throw new MetaAdError(`Meta antwortet mit HTTP ${res.status}.`, res.status);
+  }
+  if (!res.ok) {
+    const err = (json as { error?: unknown } | null)?.error;
+    throw err ? toMetaError(err) : new MetaAdError(`Meta antwortet mit HTTP ${res.status}.`, res.status);
+  }
+  return parseSearchResponse(json);
+}
+
+/** Speichert Werbetreibende und Anzeigen (Tabellen advertisers und ads). Gibt false zurück, wenn das Speichern scheitert. */
+export async function saveAds(supabase: SupabaseClient, ads: MetaAd[]): Promise<boolean> {
+  if (!ads.length) return true;
+  const pages = new Map<string, string>();
+  for (const ad of ads) if (ad.pageId) pages.set(ad.pageId, ad.pageName ?? "Unbekannte Seite");
+
+  const advertiserIds = new Map<string, string>();
+  if (pages.size) {
+    const { data, error } = await supabase
+      .from("advertisers")
+      .upsert(
+        [...pages].map(([external_id, name]) => ({ platform: "meta", external_id, name })),
+        { onConflict: "platform,external_id" },
+      )
+      .select("id, external_id");
+    if (error) return false;
+    for (const row of data ?? []) advertiserIds.set(row.external_id, row.id);
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("ads").upsert(
+    ads.map((ad) => ({
+      platform: "meta",
+      external_id: ad.id,
+      advertiser_id: ad.pageId ? (advertiserIds.get(ad.pageId) ?? null) : null,
+      body: ad.bodies[0] ?? null,
+      title: ad.linkTitles[0] ?? null,
+      snapshot_url: ad.libraryUrl,
+      publisher_platforms: ad.platforms,
+      started_at: ad.startedAt,
+      stopped_at: ad.stoppedAt,
+      eu_reach: ad.euReach,
+      fetched_at: now,
+    })),
+    { onConflict: "platform,external_id" },
+  );
+  return !error;
+}
+
+/** Sucht Anzeigen live bei Meta und speichert die Treffer. Die API ist kostenlos, hat aber ein Abfragelimit pro Stunde. */
+export async function searchAds(supabase: SupabaseClient, query: AdQuery, fetchImpl?: FetchFn): Promise<AdLookup> {
+  const env = getMetaEnv();
+  if (!env) return { status: "not_configured" };
+  try {
+    const result = await fetchAdsLive(query, env, fetchImpl);
+    const saved = await saveAds(supabase, result.ads);
+    await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", META_SOURCE_ID);
+    return { status: "ok", result, fetchedAt: new Date().toISOString(), saved };
+  } catch (e) {
+    const message =
+      e instanceof MetaAdError
+        ? e.message
+        : e instanceof Error && e.name === "TimeoutError"
+          ? "Meta hat nicht rechtzeitig geantwortet."
+          : "Meta ist nicht erreichbar.";
+    await supabase
+      .from("sources")
+      .update({ last_error_at: new Date().toISOString(), last_error: message.slice(0, 500) })
+      .eq("id", META_SOURCE_ID);
+    return { status: "error", message };
+  }
+}

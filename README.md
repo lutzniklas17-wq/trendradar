@@ -39,6 +39,25 @@ Ohne Zugangsdaten zeigt sie keine Kurven und keine Beispieldaten.
 Jede Antwort wird in `trend_series` gespeichert. Dieselbe Abfrage (Begriffe, Region, Zeitraum) innerhalb von 24 Stunden
 kommt aus dem Zwischenspeicher und kostet nichts.
 
+## Meta Ad Spy (Meta Ad Library API)
+
+Die Seite „Ad Spy“ sucht Anzeigen über die offizielle Meta Ad Library API (Endpoint `ads_archive`, kostenlos, Abfragelimit pro Stunde).
+Ohne Token zeigt sie keine Anzeigen und keine Beispieldaten, nur Links zur Ad Library im Browser.
+
+Grenzen laut Meta-Doku: Produktanzeigen gibt es nur, wenn sie in der EU ausgespielt wurden (die Schweiz fehlt). Ausgaben,
+Impressionen und Umsatz liefert Meta nur für politische Anzeigen. Bilder und Videos kommen nicht über die API; jede Anzeige
+hat einen Link zur Ad Library. Das `ad_snapshot_url` von Meta enthält das Token und wird deshalb nie verwendet.
+
+1. Identität bei Meta bestätigen: [facebook.com/ID](https://www.facebook.com/ID) (Ausweis, kann einige Tage dauern).
+2. Entwicklerkonto auf [developers.facebook.com](https://developers.facebook.com) eröffnen (mit dem gleichen Facebook-Konto).
+3. Unter **Meine Apps** eine neue App anlegen (Typ ohne Produkte, z. B. „Andere“ / „Business“).
+4. Im [Graph API Explorer](https://developers.facebook.com/tools/explorer/) die App wählen und ein **User Access Token** erzeugen.
+5. Im [Access Token Debugger](https://developers.facebook.com/tools/debug/accesstoken/) auf **Access Token verlängern** klicken (gilt dann rund 60 Tage).
+6. In Vercel als `META_ACCESS_TOKEN` eintragen, danach neu deployen. Optional `META_GRAPH_VERSION` (Standard `v26.0`).
+
+Läuft das Token ab, zeigt die Seite „Token ungültig oder abgelaufen“; dann Schritte 4 bis 6 wiederholen.
+Gefundene Anzeigen werden in `advertisers` und `ads` gespeichert (keine neue Migration nötig).
+
 ## Lokal entwickeln
 
 ```bash
