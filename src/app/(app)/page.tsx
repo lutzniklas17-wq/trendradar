@@ -24,19 +24,19 @@ export default async function DashboardPage() {
     <>
       <PageHeader title="Dashboard" description="Neue Entdeckungen, Trends und Anzeigen auf einen Blick." />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {areas.map(({ href, label, description, icon: Icon }) => (
           <Link
             key={href}
             href={href}
-            className="group rounded-xl border border-border bg-surface p-4 transition hover:border-accent"
+            className="group rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors duration-150 hover:border-border-strong hover:bg-surface-muted/40"
           >
             <div className="flex items-center justify-between">
-              <Icon className="size-5 text-accent" aria-hidden />
-              <ArrowRight className="size-4 text-muted opacity-0 transition group-hover:opacity-100" aria-hidden />
+              <Icon className="size-4 text-subtle transition-colors group-hover:text-accent" aria-hidden strokeWidth={1.75} />
+              <ArrowRight className="size-3.5 -translate-x-1 text-subtle opacity-0 transition duration-150 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden />
             </div>
-            <p className="mt-3 text-sm font-medium">{label}</p>
-            <p className="mt-0.5 text-xs text-muted">{description}</p>
+            <p className="mt-4 text-sm font-medium">{label}</p>
+            <p className="mt-0.5 text-[13px] leading-snug text-muted">{description}</p>
           </Link>
         ))}
       </div>

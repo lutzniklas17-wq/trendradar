@@ -21,7 +21,7 @@ export function ShopChart({ points }: { points: { day: string; activeAds: number
             formatter={(v) => [v, "Aktive Anzeigen"]}
             contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
           />
-          <Line type="monotone" dataKey="activeAds" stroke="#0f9f8f" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
+          <Line type="monotone" dataKey="activeAds" stroke="var(--chart-1)" strokeWidth={1.75} dot={{ r: 2.5, strokeWidth: 0, fill: "var(--chart-1)" }} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

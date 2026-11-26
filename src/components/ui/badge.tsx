@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type Tone = "neutral" | "accent" | "positive" | "negative" | "warning";
 
 const tones: Record<Tone, string> = {
-  neutral: "bg-surface-muted text-muted",
-  accent: "bg-accent-soft text-accent",
-  positive: "bg-positive/10 text-positive",
-  negative: "bg-negative/10 text-negative",
-  warning: "bg-warning/10 text-warning",
+  neutral: "border-border bg-surface-muted text-muted",
+  accent: "border-accent/15 bg-accent-soft text-accent",
+  positive: "border-positive/15 bg-positive/8 text-positive",
+  negative: "border-negative/15 bg-negative/8 text-negative",
+  warning: "border-warning/15 bg-warning/8 text-warning",
 };
 
 export function Badge({
@@ -17,7 +17,7 @@ export function Badge({
 }: React.HTMLAttributes<HTMLSpanElement> & { tone?: Tone }) {
   return (
     <span
-      className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", tones[tone], className)}
+      className={cn("inline-flex h-5 items-center gap-1 rounded border px-1.5 text-[11px] font-medium whitespace-nowrap", tones[tone], className)}
       {...props}
     />
   );

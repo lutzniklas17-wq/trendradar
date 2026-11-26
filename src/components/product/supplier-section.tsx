@@ -111,7 +111,7 @@ function PlatformBlock({
         <div className="flex items-center gap-3">
           <PlatformLogo icon={platform.icon} monogram={platform.monogram} color={platform.color} name={platform.name} />
           <div>
-            <p className="flex items-center gap-2 text-sm font-semibold">
+            <p className="flex items-center gap-2 text-sm font-medium">
               {platform.name}
               <Badge>{ACCESS_LABEL[platform.dataAccess]}</Badge>
             </p>
@@ -165,7 +165,7 @@ export function SupplierSection({ itemId, query, offers }: { itemId: string; que
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">Lieferanten</h2>
+            <h2 className="text-base font-medium">Lieferanten</h2>
             <p className="text-sm text-muted">
               Wo du einkaufst. Die Suchlinks öffnen die Plattform; bestätigte Angebote fliessen in den Rechner.
             </p>
@@ -182,7 +182,7 @@ export function SupplierSection({ itemId, query, offers }: { itemId: string; que
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold">Preisreferenz</h2>
+          <h2 className="text-base font-medium">Preisreferenz</h2>
           <p className="text-sm text-muted">
             Kein Einkauf: zeigt, zu welchem Preis Kunden das Produkt anderswo finden. Wichtig für deinen Verkaufspreis.
           </p>

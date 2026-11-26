@@ -4,7 +4,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import type { TrendPoint } from "@/lib/trends/dataforseo";
 
 /** Gut unterscheidbare Linienfarben, in hellem und dunklem Modus lesbar. */
-const COLORS = ["#0f9f8f", "#6366f1", "#e11d48", "#d97706", "#0284c7"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
 const fmtDate = (iso: string) => {
   const d = new Date(`${iso}T00:00:00Z`);

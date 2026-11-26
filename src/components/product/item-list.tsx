@@ -25,20 +25,20 @@ export function ItemList({ items, showArea = false }: { items: ItemListEntry[]; 
     <ul className="divide-y divide-border">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href={`/produkt/${item.id}`} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-muted">
+          <Link href={`/produkt/${item.id}`} className="group flex items-center justify-between gap-4 px-5 py-3 transition-colors duration-150 hover:bg-surface-muted/60">
             <div className="min-w-0">
               <p className="flex items-center gap-2 truncate text-sm font-medium">
                 {item.name}
                 {item.is_new ? <Badge tone="accent">neu</Badge> : null}
               </p>
-              <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted">
+              <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted">
                 {showArea && item.area ? <span>{AREA_LABEL[item.area] ?? item.area}</span> : null}
                 {item.category ? <span>{item.category}</span> : null}
                 {item.first_discovered_at ? <span>entdeckt {formatDate(item.first_discovered_at)}</span> : null}
                 {item.note ? <span className="truncate">„{item.note}“</span> : null}
               </p>
             </div>
-            <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+            <ChevronRight className="size-4 shrink-0 text-subtle transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
           </Link>
         </li>
       ))}

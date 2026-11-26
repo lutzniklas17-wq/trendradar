@@ -4,9 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { createProduct, type CreateProductState } from "@/app/(app)/produkt/actions";
-
-const inputClass =
-  "h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
+import { inputClass } from "@/components/ui/field";
 
 export function CreateProductForm() {
   const [state, formAction, pending] = useActionState<CreateProductState, FormData>(createProduct, {});
@@ -33,7 +31,7 @@ export function CreateProductForm() {
           defaultValue={state.values?.description}
           maxLength={2000}
           rows={3}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-subtle hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
       </label>
 

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Form from "next/form";
 import { ExternalLink, LineChart } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TrendChart } from "@/components/trends/trend-chart";
 import { requireOwner } from "@/lib/auth";
@@ -21,10 +22,9 @@ import {
   type TrendTimeRange,
 } from "@/lib/trends/dataforseo";
 import { CACHE_HOURS, getTrend, type TrendLookup } from "@/lib/trends/service";
+import { inputClass } from "@/components/ui/field";
 
 export const metadata: Metadata = { title: "Google Trends" };
-
-const fieldClass = "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
 
 export default async function GoogleTrendsPage({ searchParams }: PageProps<"/google-trends">) {
   const params = await searchParams;
@@ -52,14 +52,14 @@ export default async function GoogleTrendsPage({ searchParams }: PageProps<"/goo
       />
 
       <Card className="mb-6">
-        <form method="get" className="flex flex-wrap items-end gap-3 p-5">
-          <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm">
-            <span className="font-medium">Suchbegriffe (bis {MAX_KEYWORDS}, mit Komma getrennt)</span>
-            <input name="q" defaultValue={raw} required maxLength={600} className={fieldClass} placeholder="z. B. led maske, red light therapy" />
+        <Form action="/google-trends" className="flex flex-wrap items-end gap-3 p-5">
+          <label className="flex min-w-64 flex-1 flex-col gap-1.5">
+            <span className="text-[13px] text-muted">Suchbegriffe (bis {MAX_KEYWORDS}, mit Komma getrennt)</span>
+            <input name="q" defaultValue={raw} required maxLength={600} className={inputClass} placeholder="z. B. led maske, red light therapy" />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Region</span>
-            <select name="geo" defaultValue={geo} className={fieldClass}>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-muted">Region</span>
+            <select name="geo" defaultValue={geo} className={inputClass}>
               {TREND_GEOS.map((g) => (
                 <option key={g.code} value={g.code}>
                   {g.label}
@@ -67,9 +67,9 @@ export default async function GoogleTrendsPage({ searchParams }: PageProps<"/goo
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Zeitraum</span>
-            <select name="zeit" defaultValue={timeRange} className={fieldClass}>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-muted">Zeitraum</span>
+            <select name="zeit" defaultValue={timeRange} className={inputClass}>
               {TREND_TIME_RANGES.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
@@ -77,8 +77,8 @@ export default async function GoogleTrendsPage({ searchParams }: PageProps<"/goo
               ))}
             </select>
           </label>
-          <Button type="submit">Abfragen</Button>
-        </form>
+          <SubmitButton pendingLabel="Wird abgefragt…">Abfragen</SubmitButton>
+        </Form>
         <p className="border-t border-border px-5 py-3 text-xs text-muted">
           Ergebnisse werden {CACHE_HOURS} Stunden gespeichert; dieselbe Abfrage kostet in dieser Zeit nichts mehr.
           {configured ? null : " DataForSEO ist noch nicht verbunden (siehe unten)."}

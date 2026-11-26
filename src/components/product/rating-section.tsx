@@ -73,7 +73,7 @@ export function RatingSection({ assessment }: { assessment: Assessment | null })
         <div className="space-y-4 p-5 text-sm">
           <div>
             <p className="text-xs text-muted">Durchschnitt</p>
-            <p className="text-2xl font-semibold tabular-nums">{average == null ? "–" : `${formatNumber(average, 1)} / 5`}</p>
+            <p className="text-xl font-medium tabular-nums">{average == null ? "–" : `${formatNumber(average, 1)} / 5`}</p>
             <p className="text-xs text-muted">
               {rated} von {CRITERIA.length} Kriterien bewertet
               {average == null ? " (zu wenige für einen Durchschnitt)" : ""}

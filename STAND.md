@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Shop Spy)_
+_Zuletzt aktualisiert: 26.11.2026 (Design-System und Filter)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -23,7 +23,10 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 
 - Phase 3c (PR #4, gemergt): Meta Ad Spy über Ad Library API (`ads_archive`, v26.0, Felder laut Doku). Suche nach Begriff, EU-Land, Status, Plattform; Paging per Cursor; Treffer in `advertisers`/`ads` gespeichert; Signale „lange Laufzeit“ (ab 30 Tagen) und „mehrere Anzeigen pro Seite“. Ohne Token: Hinweis plus Browser-Links zur Ad Library (auch Schweiz). `ad_snapshot_url` enthält das Token, deshalb nur öffentlicher Link `facebook.com/ads/library/?id=`. Link „Ad Spy“ auf der Produktseite. Keine neue Migration.
 
-- Phase 3d (Branch `claude/project-thread-s7fxvy`, PR offen): Shop Spy `/shop-spy` und `/shop-spy/[id]`. Shop = Facebook-Seite; zählt alle aktiven EU-Anzeigen per `search_page_ids` (alle 27 EU-Länder, 100 pro Seite, max. 10 Seiten → sonst „mind. 1000“), Domain aus `ad_creative_link_captions` (keine echte Landingpage-URL in der API), ein Snapshot pro Shop und Zürcher Tag. Signal „skaliert“ (verdoppelt und +5 ggü. ≥7 Tage) bzw. „stark rückläufig“. „Shop verfolgen“-Knopf im Ad Spy. Täglicher Lauf: Vercel Cron `vercel.json` → `/api/cron/shops` (braucht `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`, Proxy lässt `/api/cron` ohne Login durch). Migration `0003_shops.sql`.
+- Phase 3c ist als PR #4 gemergt, Phase 3d als PR #5.
+- Phase 3d (PR #5, gemergt): Shop Spy `/shop-spy` und `/shop-spy/[id]`. Shop = Facebook-Seite; zählt alle aktiven EU-Anzeigen per `search_page_ids` (alle 27 EU-Länder, 100 pro Seite, max. 10 Seiten → sonst „mind. 1000“), Domain aus `ad_creative_link_captions` (keine echte Landingpage-URL in der API), ein Snapshot pro Shop und Zürcher Tag. Signal „skaliert“ (verdoppelt und +5 ggü. ≥7 Tage) bzw. „stark rückläufig“. „Shop verfolgen“-Knopf im Ad Spy. Täglicher Lauf: Vercel Cron `vercel.json` → `/api/cron/shops` (braucht `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`, Proxy lässt `/api/cron` ohne Login durch). Migration `0003_shops.sql`.
+
+- Design-System (Branch `claude/project-thread-rwwjx0`, PR offen): ruhige neutrale Palette mit einem Indigo-Akzent, Geist bis max. 500, neue Bausteine `ui/field.tsx`, `ui/filter-bar.tsx`, `ui/submit-button.tsx`, `Notice` in `ui/card.tsx`. Filter (URL-Parameter, ohne Neuladen) auf Trend Spy, Watchlist, Suche, Shop Spy; Logik `src/lib/list-filters.ts` mit Tests. Alle Server-Action-Knöpfe zeigen Ladezustand. Design-Regeln stehen in `CLAUDE.md`. Ad Spy bewusst nicht angefasst (paralleler Thread baut dort Filter „meiste Anzeigen“); er erbt nur die neuen Farben.
 
 ## Verbindliche Anforderungen (Nutzer, 26.11.2026)
 - **Strikt E-Commerce.** Alles (Trend, Startup, Future Radar, Produkte) muss für Online-Shops/Dropshipping relevant sein. Branchen wie Öl, Industrie, B2B-Software, Finanzen herausfiltern.
@@ -43,6 +46,7 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - `supabase/migrations/*`
 
 ## Offene Punkte
+- Design: Ad Spy auf `Field`/`Select`/`FilterBar` umstellen, sobald der parallele Ad-Spy-PR gemergt ist. Produktseite, Rechner und Startup Spy/Future Radar (noch Platzhalter) später feiner überarbeiten.
 - Nutzer: PR Phase 3d mergen, Migration 0003 ausführen, `CRON_SECRET` und `SUPABASE_SERVICE_ROLE_KEY` in Vercel setzen (README „Shop Spy“). Meta-Token einrichten (README „Meta Ad Spy“), DataForSEO-Konto eröffnen (README „Google Trends“). Supabase und Vercel sind laut Nutzer eingerichtet (26.11.2026); prüfen, ob Migrationen 0001 und 0002 gelaufen sind.
 - Meta: Zugangsschritte (Identitätsbestätigung, App, Token) nicht gegen die offizielle Seite geprüft (facebook.com/ads/library/api blockiert automatischen Abruf). Paging (`paging.cursors.after`, `limit`) nach Graph-API-Standard, mit echtem Token testen.
 - Shop Spy: `search_page_ids` ohne `search_terms` und mehrere Länder in `ad_reached_countries` laut Doku zulässig, aber noch nicht mit echtem Token getestet. Hobby-Plan: Funktion max. 300 s, darum max. 40 Shops pro Lauf.
