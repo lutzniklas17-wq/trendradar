@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ExternalLink, PackageSearch, RefreshCw, Sparkles, Trash2 } from "lucide-react";
-import { PageHeader } from "@/components/layout/page-header";
+import { ChevronLeft, ChevronRight, ExternalLink, PackageSearch, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardHeader, Notice } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, inputClass } from "@/components/ui/field";
-import { FilterBar } from "@/components/ui/filter-bar";
+import { BrowseHeader } from "@/components/layout/browse-header";
+import { FilterPanel, type PanelGroup } from "@/components/ui/filter-panel";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { LibraryProductRow, ProductCard, type LibraryProduct } from "@/components/library/product-card";
 import { QuickChips } from "@/components/ui/quick-chips";
@@ -102,11 +102,42 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
   const active = hasLibraryFilters(filters);
   const externalQuery = filters.term || filters.text;
 
+  const opt = <T extends { value: string; label: string }>(list: readonly T[], current: string, key: keyof typeof filters, map: (v: string) => unknown = (v) => v) =>
+    list.map((o) => ({ label: o.label, active: o.value === current, href: chipHref({ [key]: map(o.value) } as Partial<typeof filters>) }));
+  const panelGroups: PanelGroup[] = [
+    {
+      title: "Produkt",
+      items: [
+        { kind: "choice", icon: "sort", label: "Sortierung", options: opt(LIBRARY_SORTS, filters.sort, "sort") },
+        { kind: "choice", icon: "price", label: "Einkaufspreis", options: opt(LIBRARY_PRICES, filters.maxPrice ? String(filters.maxPrice) : "", "maxPrice", (v) => (v ? Number(v) : null)) },
+      ],
+    },
+    {
+      title: "Relevanz",
+      items: [{ kind: "choice", icon: "sparkles", label: "Relevanz und KI", options: opt(LIBRARY_RELEVANCE, filters.relevance, "relevance") }],
+    },
+    {
+      title: "Versand",
+      items: [{ kind: "toggle", icon: "truck", label: "Gratisversand", href: chipHref({ freeShipping: !filters.freeShipping }), active: filters.freeShipping }],
+    },
+    {
+      title: "Ansicht",
+      items: [{ kind: "toggle", icon: "eye", label: "Ausgeblendete zeigen", href: chipHref({ showHidden: !filters.showHidden }), active: filters.showHidden }],
+    },
+  ];
+
   return (
     <>
-      <PageHeader
+      <BrowseHeader
+        icon={ShoppingBag}
         title="Produkte"
-        description="Oben die Top-Hits aus echten Signalen, darunter die ganze Lieferanten-Bibliothek. Quelle: CJdropshipping API, täglich aktualisiert."
+        accent="entdecken"
+        description={`${new Intl.NumberFormat("de-CH").format(total)} Produkte aus Lieferanten-Katalogen, täglich aktualisiert.`}
+        action={
+          <a href="#update" className={buttonClass("secondary", "sm", "rounded-full px-3.5")}>
+            <RefreshCw className="size-3.5 text-accent" aria-hidden /> Tägliches Update
+          </a>
+        }
       />
 
       {notice ? <Notice tone="neutral">{notice}</Notice> : null}
@@ -118,11 +149,137 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
         </Notice>
       ) : null}
 
-      {/* Suche */}
-      <Card className="mb-8">
+      {/* Top-Hits als Karussell */}
+      <section className="mb-8" aria-labelledby="top-hits">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="top-hits" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <Sparkles className="size-4 text-accent" aria-hidden strokeWidth={1.75} /> Top-Hits
+          </h2>
+          <p className="max-w-2xl text-[13px] text-muted">
+            Nach Regeln: Übernahmen durch Shops, Wachstum seit letzter Woche, neu beim Lieferanten, Meta-Anzeigen zum Stichwort{ai ? ", KI-Einschätzung" : ""}.
+          </p>
+        </div>
+        {hits.length ? (
+          <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0">
+            {hits.map(({ hit, product }, i) => (
+              <div key={hit.id} className="w-56 shrink-0 snap-start">
+                <ProductCard product={product} claims={hit.claims} rank={i + 1} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <EmptyState icon={Sparkles} title="Noch keine Top-Hits">
+              Top-Hits entstehen aus gesammelten Daten. Suche unten ein Produkt oder trage Begriffe für den täglichen Lauf ein. Das Wachstum („+40 Übernahmen in 7 Tagen“) sieht
+              man nach etwa einer Woche täglicher Messung.
+            </EmptyState>
+          </Card>
+        )}
+      </section>
+
+      {/* Suche in der Bibliothek */}
+      <form action="/produkte" className="flex flex-wrap gap-2" role="search">
+        {filters.term ? <input type="hidden" name="begriff" value={filters.term} /> : null}
+        <label className="relative min-w-64 flex-1">
+          <span className="sr-only">Produkte durchsuchen</span>
+          <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-subtle" aria-hidden />
+          <input
+            name="filter"
+            type="search"
+            defaultValue={filters.text}
+            placeholder="Nach Produktname suchen, z. B. „posture corrector“"
+            className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-xs`}
+          />
+        </label>
+        <button type="submit" className={buttonClass("primary", "md", "h-12 rounded-xl px-5")}>
+          Suchen
+        </button>
+      </form>
+
+      <QuickChips
+        items={[
+          { label: "Meiste Übernahmen", href: chipHref({ sort: "" }), active: !filters.sort, title: "So oft haben Shops das Produkt beim Lieferanten übernommen" },
+          { label: "Neu beim Lieferanten", href: chipHref({ sort: "neu" }), active: filters.sort === "neu" },
+          { label: "Von KI empfohlen", href: chipHref({ relevance: filters.relevance === "empfohlen" ? "" : "empfohlen" }), active: filters.relevance === "empfohlen", title: "Einschätzung, kein Fakt" },
+          { label: "Gratisversand", href: chipHref({ freeShipping: !filters.freeShipping }), active: filters.freeShipping },
+          { label: "Bis 10 USD", href: chipHref({ maxPrice: filters.maxPrice === 10 ? null : 10 }), active: filters.maxPrice === 10 },
+        ]}
+        className="px-0"
+      />
+
+      <FilterPanel groups={panelGroups} resetHref="/produkte" active={active} />
+
+      {/* Ergebnisse */}
+      <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-muted tabular-nums">
+          {resultLabel(products.length, matching, ["Produkt", "Produkte"])}
+          {filters.term ? (
+            <>
+              {" "}
+              für <Badge tone="accent">{filters.term}</Badge>{" "}
+              <Link href="/produkte" className="text-accent hover:underline">
+                alle zeigen
+              </Link>
+            </>
+          ) : null}
+        </p>
+        {pages > 1 ? (
+          <span className="text-[13px] text-muted tabular-nums">
+            Seite {filters.page} von {pages}
+          </span>
+        ) : null}
+      </div>
+
+      {products.length ? (
+        <div className="space-y-3">
+          {products.map((p) => (
+            <LibraryProductRow key={p.id} product={p} ads={p.item_id ? (adCounts.get(p.item_id) ?? null) : null} />
+          ))}
+        </div>
+      ) : (
+        <Card>
+          {active ? (
+            <EmptyState icon={PackageSearch} title="Keine Einträge für diese Filter">
+              <Link href="/produkte" className="text-accent hover:underline">
+                Filter zurücksetzen
+              </Link>
+            </EmptyState>
+          ) : (
+            <EmptyState icon={PackageSearch} title="Die Bibliothek ist noch leer">
+              Suche unten ein Produkt beim Lieferanten oder lass den täglichen Lauf arbeiten. Jeder Treffer wird gespeichert.
+            </EmptyState>
+          )}
+        </Card>
+      )}
+
+      {pages > 1 ? (
+        <nav className="mt-4 flex items-center justify-between text-[13px] text-muted" aria-label="Seiten">
+          {filters.page > 1 ? (
+            <Link href={`/produkte?${libraryQuery(filters, filters.page - 1)}`} className={buttonClass("secondary", "sm")}>
+              <ChevronLeft className="size-3.5" aria-hidden /> Zurück
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="tabular-nums">
+            Seite {filters.page} von {pages}
+          </span>
+          {filters.page < pages ? (
+            <Link href={`/produkte?${libraryQuery(filters, filters.page + 1)}`} className={buttonClass("secondary", "sm")}>
+              Weiter <ChevronRight className="size-3.5" aria-hidden />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : null}
+
+      {/* Neue Produkte beim Lieferanten suchen */}
+      <Card className="mt-10 mb-8">
+        <CardHeader title="Neue Produkte beim Lieferanten suchen" description="Fragt den Katalog live ab und speichert alle Treffer in der Bibliothek (zählt zum Tageslimit)." />
         <form action={searchLibrary} className="grid gap-3 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-          <Field label="Produkt suchen (englisch, z. B. „posture corrector“)">
-            <Input name="begriff" defaultValue={filters.term} placeholder="Suchbegriff" required minLength={2} maxLength={80} />
+          <Field label="Suchbegriff (englisch)">
+            <Input name="begriff" defaultValue={filters.term} placeholder="z. B. pet hair remover" required minLength={2} maxLength={80} />
           </Field>
           <Field label="Lager">
             <Select name="lager" options={COUNTRY_OPTIONS} defaultValue="" />
@@ -152,121 +309,8 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
         </div>
       </Card>
 
-      {/* Top-Hits */}
-      <section className="mb-10" aria-labelledby="top-hits">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 id="top-hits" className="flex items-center gap-2 text-sm font-medium">
-              <Sparkles className="size-4 text-accent" aria-hidden strokeWidth={1.75} /> Top-Hits
-            </h2>
-            <p className="mt-0.5 max-w-2xl text-[13px] text-muted">
-              Rangliste nach Regeln: Übernahmen durch Shops, Wachstum seit letzter Woche, neu bei CJ, Meta-Anzeigen zum Stichwort
-              {ai ? " und KI-Einschätzung." : ". KI-Einschätzung kommt dazu, sobald der Anthropic-Key gesetzt ist."}
-            </p>
-          </div>
-          <Badge title="Ausgeschlossene, ausgeblendete und Produkte ohne Bild zählen nicht">{hits.length} Treffer</Badge>
-        </div>
-        {hits.length ? (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {hits.map(({ hit, product }, i) => (
-              <ProductCard key={hit.id} product={product} claims={hit.claims} rank={i + 1} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <EmptyState icon={Sparkles} title="Noch keine Top-Hits">
-              Top-Hits entstehen aus gesammelten Daten. Suche oben ein Produkt oder trage Begriffe für den täglichen Lauf ein. Das Wachstum („+40 Übernahmen in 7 Tagen“) sieht
-              man nach etwa einer Woche täglicher Messung.
-            </EmptyState>
-          </Card>
-        )}
-      </section>
-
-      {/* Bibliothek */}
-      <Card className="mb-8">
-        <CardHeader
-          title="Bibliothek"
-          description={`${new Intl.NumberFormat("de-CH").format(total)} gespeicherte Produkte. Steine, Rohstoffe, Ersatz- und Elektronikteile sind ausgeblendet (Filter „Relevanz“).`}
-        />
-        <FilterBar
-          path="/produkte"
-          query={filters.text}
-          queryPlaceholder="In der Bibliothek filtern…"
-          keep={filters.term ? { begriff: filters.term } : {}}
-          controls={[{ kind: "select", name: "sortierung", label: "Sortierung", value: filters.sort, options: LIBRARY_SORTS }]}
-          groups={[
-            { title: "Preis", controls: [{ kind: "select", name: "preis", label: "Einkaufspreis", value: filters.maxPrice ? String(filters.maxPrice) : "", options: LIBRARY_PRICES }] },
-            { title: "Relevanz", controls: [{ kind: "select", name: "relevanz", label: "Relevanz", value: filters.relevance, options: LIBRARY_RELEVANCE }] },
-            {
-              title: "Versand und Anzeige",
-              controls: [
-                { kind: "toggle", name: "gratisversand", label: "Gratisversand", checked: filters.freeShipping },
-                { kind: "toggle", name: "ausgeblendet", label: "Ausgeblendete zeigen", checked: filters.showHidden },
-              ],
-            },
-          ]}
-          active={active}
-          resultLabel={resultLabel(products.length, matching, ["Produkt", "Produkte"])}
-        />
-        <QuickChips
-          items={[
-            { label: "Meiste Übernahmen", href: chipHref({ sort: "" }), active: !filters.sort, title: "So oft haben Shops das Produkt bei CJ übernommen" },
-            { label: "Neu beim Lieferanten", href: chipHref({ sort: "neu" }), active: filters.sort === "neu" },
-            { label: "Von KI empfohlen", href: chipHref({ relevance: filters.relevance === "empfohlen" ? "" : "empfohlen" }), active: filters.relevance === "empfohlen", title: "Einschätzung, kein Fakt" },
-            { label: "Gratisversand", href: chipHref({ freeShipping: !filters.freeShipping }), active: filters.freeShipping },
-            { label: "Bis 10 USD", href: chipHref({ maxPrice: filters.maxPrice === 10 ? null : 10 }), active: filters.maxPrice === 10 },
-          ]}
-        />
-        {filters.term ? (
-          <div className="flex items-center gap-2 border-b border-border px-5 py-2 text-[13px] text-muted">
-            Treffer für <Badge tone="accent">{filters.term}</Badge>
-            <Link href="/produkte" className="text-accent hover:underline">
-              Alle Produkte zeigen
-            </Link>
-          </div>
-        ) : null}
-        {products.length ? (
-          <div className="space-y-3 border-t border-border bg-background p-4">
-            {products.map((p) => (
-              <LibraryProductRow key={p.id} product={p} ads={p.item_id ? (adCounts.get(p.item_id) ?? null) : null} />
-            ))}
-          </div>
-        ) : active ? (
-          <EmptyState icon={PackageSearch} title="Keine Einträge für diese Filter">
-            <Link href="/produkte" className="text-accent hover:underline">
-              Filter zurücksetzen
-            </Link>
-          </EmptyState>
-        ) : (
-          <EmptyState icon={PackageSearch} title="Die Bibliothek ist noch leer">
-            Suche oben ein Produkt bei CJ oder lass den täglichen Lauf arbeiten. Jeder Treffer wird gespeichert.
-          </EmptyState>
-        )}
-        {pages > 1 ? (
-          <nav className="flex items-center justify-between border-t border-border px-5 py-3 text-[13px] text-muted" aria-label="Seiten">
-            {filters.page > 1 ? (
-              <Link href={`/produkte?${libraryQuery(filters, filters.page - 1)}`} scroll={false} className={buttonClass("secondary", "sm")}>
-                <ChevronLeft className="size-3.5" aria-hidden /> Zurück
-              </Link>
-            ) : (
-              <span />
-            )}
-            <span className="tabular-nums">
-              Seite {filters.page} von {pages}
-            </span>
-            {filters.page < pages ? (
-              <Link href={`/produkte?${libraryQuery(filters, filters.page + 1)}`} scroll={false} className={buttonClass("secondary", "sm")}>
-                Weiter <ChevronRight className="size-3.5" aria-hidden />
-              </Link>
-            ) : (
-              <span />
-            )}
-          </nav>
-        ) : null}
-      </Card>
-
       {/* Täglicher Lauf */}
-      <Card>
+      <Card id="update" className="scroll-mt-20">
         <CardHeader
           title="Tägliches Update"
           description={`Jeden Morgen holt der Lauf die CJ-Trend- und Neuheitenliste und alle Begriffe unten. Heute ${cjCalls} von ${cj?.dailyLimit ?? 300} CJ-Abfragen genutzt${ai ? `, KI-Kosten heute ${aiCost.toFixed(3)} USD` : ""}.`}

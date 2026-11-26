@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Store } from "lucide-react";
-import { PageHeader } from "@/components/layout/page-header";
+import { BrowseHeader } from "@/components/layout/browse-header";
 import { Card, CardHeader, Notice } from "@/components/ui/card";
 import { ProvenanceBadge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
@@ -79,9 +79,11 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
 
   return (
     <>
-      <PageHeader
-        title="Shop Spy"
-        description="Wie viele Anzeigen ein Shop gerade schaltet und wie sich das entwickelt. Quelle: Meta Ad Library API, nur Anzeigen, die in der EU laufen."
+      <BrowseHeader
+        icon={Store}
+        title="Shops"
+        accent="beobachten"
+        description="Wie viele Anzeigen ein Shop gerade schaltet und wie sich das entwickelt. Quelle: Meta Ad Library, nur EU."
       />
 
       {errorMessage ? <Notice>{errorMessage}</Notice> : null}

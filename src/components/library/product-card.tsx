@@ -1,4 +1,4 @@
-import { ExternalLink, EyeOff, Eye, Package, Truck, Video, Users } from "lucide-react";
+import { Bookmark, ExternalLink, EyeOff, Eye, Package, Truck, Video, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -156,13 +156,13 @@ function ProductActions({ product: p, full = true }: { product: LibraryProduct; 
   );
 }
 
-/** Bibliotheksprodukt als Zeile (Bild | Titel, Datum, Preis | Lieferant | Anzeigen). */
+/** Bibliotheksprodukt als Zeile (Bild | Titel, Datum, Preis, Herkunft | Lieferant | Anzeigen). */
 export function LibraryProductRow({
   product: p,
   ads,
   rank,
 }: {
-  product: LibraryProduct & { listed_at?: string | null; first_seen_at?: string | null };
+  product: LibraryProduct & { listed_at?: string | null; first_seen_at?: string | null; platform?: string | null };
   ads?: { active: number; total: number } | null;
   rank?: number;
 }) {
@@ -171,9 +171,9 @@ export function LibraryProductRow({
     <ProductRow
       rank={rank}
       muted={p.hidden}
-      product={{ ...p, supplier: "CJdropshipping" }}
+      product={{ ...p, platform: p.platform ?? "cj" }}
       ads={ads}
-      adsHint={p.item_id ? "Noch keine Anzeigen. Stichwort im Datensammler anlegen." : "Übernehmen, um Anzeigen zu diesem Produkt zu sammeln."}
+      adsHint={p.item_id ? "Noch keine Anzeigen. Stichwort im Datensammler anlegen." : "Merken, um Anzeigen zu diesem Produkt zu sammeln."}
       badges={
         <>
           {p.ai_score !== null ? (
@@ -187,10 +187,30 @@ export function LibraryProductRow({
               Ausgeschlossen
             </Badge>
           ) : null}
-          {p.item_id ? <Badge tone="positive">Übernommen</Badge> : null}
         </>
       }
-      actions={<ProductActions product={p} full={false} />}
+      actions={
+        <form action={toggleHidden}>
+          <input type="hidden" name="id" value={p.id} />
+          <input type="hidden" name="hide" value={p.hidden ? "0" : "1"} />
+          <SubmitButton size="sm" variant="ghost" className="size-9 px-0" title={p.hidden ? "Wieder einblenden" : "Ausblenden"}>
+            {p.hidden ? <Eye className="size-4" aria-label="Wieder einblenden" /> : <EyeOff className="size-4" aria-label="Ausblenden" />}
+          </SubmitButton>
+        </form>
+      }
+      save={
+        <form action={adoptProduct}>
+          <input type="hidden" name="id" value={p.id} />
+          <SubmitButton
+            size="sm"
+            variant="secondary"
+            className={cn("size-9 px-0", p.item_id && "border-accent/40 text-accent")}
+            title={p.item_id ? "Gemerkt: Produktseite öffnen" : "Merken: als Produkt übernehmen und verfolgen"}
+          >
+            <Bookmark className={cn("size-4", p.item_id && "fill-current")} aria-label={p.item_id ? "Gemerkt, öffnen" : "Merken"} />
+          </SubmitButton>
+        </form>
+      }
     />
   );
 }

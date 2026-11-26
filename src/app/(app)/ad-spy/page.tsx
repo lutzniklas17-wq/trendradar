@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, Megaphone } from "lucide-react";
-import { PageHeader } from "@/components/layout/page-header";
+import { BrowseHeader } from "@/components/layout/browse-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,9 +76,11 @@ export default async function AdSpyPage({ searchParams }: PageProps<"/ad-spy">) 
 
   return (
     <>
-      <PageHeader
-        title="Ad Spy"
-        description="Anzeigen auf Facebook und Instagram aus der offiziellen Meta Ad Library. Abgedeckt sind nur Anzeigen, die in der EU ausgespielt wurden."
+      <BrowseHeader
+        icon={Megaphone}
+        title="Anzeigen"
+        accent="live suchen"
+        description="Direkt in der offiziellen Meta Ad Library, nur Anzeigen, die in der EU ausgespielt wurden."
       />
       <AdSpyNav active="suche" />
       {notice ? (
