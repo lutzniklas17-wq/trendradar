@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { CalendarDays, Database, ExternalLink, Megaphone, Package, Store } from "lucide-react";
+import { Database, ExternalLink, Megaphone, Package, Store } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { NewsImage } from "@/components/news/news-image";
-import { AdCard, AdGrid, fmtDate, Monogram } from "@/components/ads/ad-card";
+import { ProductRow } from "@/components/library/product-row";
+import { AdCard, AdGrid, Monogram } from "@/components/ads/ad-card";
 import { requireOwner } from "@/lib/auth";
 import { getMetaEnv } from "@/lib/env";
 import { dayCovers, domainUrl, HOME_TABS, homeHref, parseHomeParams, topAdsOfDay, weekdayShort, zurichDayRange, type HomeTab } from "@/lib/ads/feed";
@@ -236,46 +236,14 @@ async function ProductsTab({ day }: { day: string }) {
   const ads = await productAdCounts(rows.map((r) => r.id));
   return (
     <div className="space-y-3">
-      {rows.map((p) => {
-        const site = p.website_url ? safeHost(p.website_url) : null;
-        const count = ads.get(p.id);
-        return (
-          <Card key={p.id} className="grid overflow-hidden sm:grid-cols-[160px_minmax(0,1fr)_200px]">
-            <div className="aspect-[4/3] bg-surface-muted sm:aspect-auto sm:min-h-32">
-              {p.image_url ? <NewsImage src={p.image_url} alt="" className="size-full" /> : <Package className="m-auto mt-10 size-5 text-subtle" aria-hidden />}
-            </div>
-            <div className="min-w-0 space-y-2 px-5 py-4">
-              <Link href={`/produkt/${p.id}`} className="line-clamp-2 text-sm font-medium transition-colors duration-150 hover:text-accent">
-                {p.name}
-              </Link>
-              <p className="flex items-center gap-1.5 text-[12px] text-muted tabular-nums">
-                <CalendarDays className="size-3.5" aria-hidden /> Aufgenommen {fmtDate(p.first_discovered_at)}
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {p.category ? <Badge>{p.category}</Badge> : null}
-                {site ? (
-                  <a href={p.website_url!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-foreground hover:underline">
-                    {site} <ExternalLink className="size-3" aria-hidden />
-                  </a>
-                ) : null}
-              </div>
-            </div>
-            <div className="border-t border-border px-5 py-4 sm:border-t-0 sm:border-l">
-              <p className="text-[13px] text-muted">Anzeigen</p>
-              {count ? (
-                <p className="mt-1 text-sm tabular-nums" title="Über die Stichwörter dieses Produkts gefunden">
-                  <span className="text-positive">{count.active} laufend</span> / {count.total} bekannt
-                </p>
-              ) : (
-                <p className="mt-1 text-[13px] text-subtle">noch keine Stichwörter</p>
-              )}
-              <Link href={`/produkt/${p.id}`} className="mt-2 inline-block text-[12px] text-accent hover:underline">
-                Zum Produkt →
-              </Link>
-            </div>
-          </Card>
-        );
-      })}
+      {rows.map((p, i) => (
+        <ProductRow
+          key={p.id}
+          rank={i + 1}
+          product={{ id: p.id, title: p.name, image_url: p.image_url, category_path: p.category, product_url: p.website_url, first_seen_at: p.first_discovered_at, item_id: p.id }}
+          ads={ads.get(p.id) ?? null}
+        />
+      ))}
     </div>
   );
 }
@@ -300,15 +268,6 @@ async function productAdCounts(itemIds: string[]) {
     result.set(item, c);
   }
   return result;
-}
-
-function safeHost(url: string) {
-  try {
-    const u = new URL(url);
-    return u.protocol === "https:" || u.protocol === "http:" ? u.hostname.replace(/^www\./, "") : null;
-  } catch {
-    return null;
-  }
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

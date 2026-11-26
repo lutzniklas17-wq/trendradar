@@ -23,7 +23,7 @@ export const NAV_GROUPS: NavGroup[] = ["Entdecken", "Recherche", "Werkzeuge"];
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Start", icon: LayoutDashboard, description: "Top 10 des Tages und neue Entdeckungen", group: "Entdecken" },
   { href: "/ad-spy/rangliste", match: "/ad-spy", label: "Anzeigen", icon: Megaphone, description: "Anzeigen aus offiziellen Werbebibliotheken", group: "Entdecken" },
-  { href: "/trend-spy", label: "Produkte", icon: Flame, description: "Produkte, die gerade an Aufmerksamkeit gewinnen", group: "Entdecken" },
+  { href: "/trend-spy", label: "Trend Spy", icon: Flame, description: "Was gerade an Aufmerksamkeit gewinnt", group: "Entdecken" },
   { href: "/shop-spy", label: "Shops", icon: Store, description: "Aktive Anzeigen pro Shop und Verlauf", group: "Entdecken" },
   { href: "/startup-spy", label: "Startups", icon: Rocket, description: "Neue Marken, Start-ups und Produktlaunches", group: "Entdecken" },
   { href: "/future-radar", label: "Future Radar", icon: Radar, description: "Produkte mit möglichem Zukunftspotenzial", group: "Entdecken" },

@@ -5,7 +5,7 @@ import { adDomain, zurichDay } from "@/lib/shops/shops";
 import { buildSearchUrl, META_SOURCE_ID, MetaAdError, parseSearchResponse, toMetaError, type AdQuery, type AdSearchResult, type MetaAd } from "@/lib/ads/meta";
 
 export type AdLookup =
-  | { status: "ok"; result: AdSearchResult; fetchedAt: string; saved: boolean }
+  | { status: "ok"; result: AdSearchResult; fetchedAt: string; saved: boolean; /** Meta-ID → interne ID der gespeicherten Anzeige */ ids: Record<string, string> }
   | { status: "not_configured" }
   | { status: "error"; message: string };
 
@@ -119,7 +119,7 @@ export async function searchAds(supabase: SupabaseClient, query: AdQuery, fetchI
     // Aktive Treffer zählen für die eigene Rangliste („jetzt aktiv“). Fehlt die Tabelle (Migration 0004), bleibt die Suche nutzbar.
     if (ids && query.status === "ACTIVE") await recordSightings(supabase, ids.values(), query.country, zurichDay());
     await supabase.from("sources").update({ last_success_at: new Date().toISOString() }).eq("id", META_SOURCE_ID);
-    return { status: "ok", result, fetchedAt: new Date().toISOString(), saved };
+    return { status: "ok", result, fetchedAt: new Date().toISOString(), saved, ids: ids ? Object.fromEntries(ids) : {} };
   } catch (e) {
     const message = metaErrorMessage(e);
     await supabase
