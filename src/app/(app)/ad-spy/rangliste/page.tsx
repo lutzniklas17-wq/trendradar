@@ -146,7 +146,7 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
           {advertisers.rows.length ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted">
+                <thead className="bg-surface-muted/50 text-left text-xs text-muted">
                   <tr className="border-b border-border">
                     <th className="px-5 py-2 font-medium">#</th>
                     <th className="px-3 py-2 font-medium">Werbetreibender</th>
@@ -159,7 +159,7 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
                 </thead>
                 <tbody className="divide-y divide-border">
                   {advertisers.rows.map((r, i) => (
-                    <tr key={r.advertiser_id}>
+                    <tr key={r.advertiser_id} className="transition-colors duration-150 hover:bg-surface-hover">
                       <td className="px-5 py-3 tabular-nums text-muted">{i + 1}</td>
                       <td className="px-3 py-3">
                         <Link href={`/ad-spy/rangliste?${new URLSearchParams({ werbetreibender: r.advertiser_id, zeitraum: String(f.days) })}`} className="font-medium hover:text-accent">

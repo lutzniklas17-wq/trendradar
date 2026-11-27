@@ -6,7 +6,7 @@ import { OfferForm } from "@/components/product/offer-form";
 import { addOffer, deleteOffer, setOfferStatus } from "@/app/(app)/produkt/actions";
 import { SUPPLIER_PLATFORMS, type SupplierPlatform } from "@/lib/platforms";
 import type { Offer } from "@/lib/offers";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { cn, formatDate, formatNumber } from "@/lib/utils";
 
 const ACCESS_LABEL: Record<SupplierPlatform["dataAccess"], string> = {
   api: "Daten per API",
@@ -33,7 +33,7 @@ function Value({ value, suffix }: { value: string | number | null; suffix?: stri
 function OfferRow({ offer, itemId }: { offer: Offer; itemId: string }) {
   const status = STATUS_LABEL[offer.matchStatus];
   return (
-    <tr className={offer.matchStatus === "rejected" ? "opacity-50" : undefined}>
+    <tr className={cn("transition-colors duration-150 hover:bg-surface-hover", offer.matchStatus === "rejected" && "opacity-50")}>
       <td className="px-4 py-3">
         <a href={offer.url} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 font-medium hover:text-accent">
           {offer.title ?? "Produktseite"} <ExternalLink className="size-3.5" aria-hidden />
@@ -131,7 +131,7 @@ function PlatformBlock({
         <div className="relative overflow-x-auto border-t border-border">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted">
+              <tr className="bg-surface-muted/50 text-left text-xs text-muted">
                 <th className="px-4 py-2 font-medium">Angebot</th>
                 <th className="px-4 py-2 font-medium">Preis</th>
                 <th className="px-4 py-2 font-medium">Versand</th>

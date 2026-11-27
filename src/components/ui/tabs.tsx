@@ -52,8 +52,8 @@ export function Tabs({ items, defaultTab }: { items: TabItem[]; defaultTab?: str
             onClick={() => select(item.id)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-medium transition-colors",
-              active === item.id ? "border-foreground text-foreground" : "border-transparent text-muted hover:text-foreground",
+              "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-medium transition-colors duration-150",
+              active === item.id ? "border-accent text-foreground" : "border-transparent text-muted hover:border-border-strong hover:text-foreground",
             )}
           >
             {item.label}

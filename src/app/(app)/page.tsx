@@ -66,7 +66,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 aria-current={active ? "date" : undefined}
                 className={cn(
                   "flex h-28 w-28 shrink-0 snap-start flex-col justify-between rounded-lg border p-3 transition-colors duration-150",
-                  active ? "border-accent bg-accent-soft" : "border-border bg-surface shadow-xs hover:border-border-strong",
+                  active ? "border-accent bg-accent-soft" : "border-border bg-surface shadow-card hover:border-border-strong",
                 )}
               >
                 <span className={cn("text-[12px]", active ? "text-accent" : "text-muted")}>{c.day === today ? "Heute" : weekdayShort(c.day)}</span>

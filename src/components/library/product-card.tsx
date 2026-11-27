@@ -54,7 +54,7 @@ function ProductImage({ src, alt }: { src: string | null; alt: string }) {
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer" className="aspect-square w-full bg-surface-muted object-cover" />;
+  return <img src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer" className="aspect-square w-full bg-surface-muted object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]" />;
 }
 
 export function ProductCard({ product: p, claims, rank }: { product: LibraryProduct; claims?: Claim[]; rank?: number }) {
@@ -62,11 +62,11 @@ export function ProductCard({ product: p, claims, rank }: { product: LibraryProd
   return (
     <article
       className={cn(
-        "group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong",
+        "group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover",
         p.hidden && "opacity-60",
       )}
     >
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <ProductImage src={p.image_url} alt={p.title} />
         {rank ? (
           <span className="absolute top-2 left-2 inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-surface px-1 text-[11px] font-medium tabular-nums">

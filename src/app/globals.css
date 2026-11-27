@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 /*
- * Design-Tokens (Regeln in STAND.md, Abschnitt „Design-Regeln“).
+ * Design-Tokens (Regeln in CLAUDE.md, Abschnitt „Design-Regeln“).
  * Ruhige, neutrale Grautöne, ein gedämpfter Indigo-Akzent. Keine Verläufe, keine Neonfarben.
  */
 :root {
   --background: #fafafa;
   --surface: #ffffff;
   --surface-muted: #f4f4f5;
+  --surface-hover: #f8f8f9;
   --border: #e8e8eb;
   --border-strong: #d6d6db;
   --foreground: #18181b;
@@ -25,6 +26,10 @@
   --chart-3: #b4472f;
   --chart-4: #23784f;
   --chart-5: #96690f;
+  /* Schatten: ruhig, nur zwei Stufen (Ruhe, Hover/Popover) */
+  --elev-1: 0 1px 2px 0 rgb(24 24 27 / 0.04);
+  --elev-2: 0 1px 2px 0 rgb(24 24 27 / 0.04), 0 6px 16px -4px rgb(24 24 27 / 0.08);
+  --elev-3: 0 2px 4px 0 rgb(24 24 27 / 0.04), 0 16px 40px -8px rgb(24 24 27 / 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +37,7 @@
     --background: #0f0f11;
     --surface: #161619;
     --surface-muted: #1e1e22;
+    --surface-hover: #1b1b1f;
     --border: #27272c;
     --border-strong: #36363d;
     --foreground: #ececef;
@@ -49,6 +55,9 @@
     --chart-3: #e08b74;
     --chart-4: #63b78d;
     --chart-5: #d2ad5f;
+    --elev-1: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --elev-2: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 8px 20px -6px rgb(0 0 0 / 0.5);
+    --elev-3: 0 2px 4px 0 rgb(0 0 0 / 0.3), 0 20px 48px -8px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -56,6 +65,7 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-foreground: var(--foreground);
@@ -70,6 +80,30 @@
   --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-card: var(--elev-1);
+  --shadow-card-hover: var(--elev-2);
+  --shadow-popover: var(--elev-3);
+  --animate-pop-in: pop-in 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade-in: fade-in 140ms ease-out;
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 body {
