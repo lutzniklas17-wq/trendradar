@@ -32,7 +32,9 @@ import { searchAds, type AdLookup } from "@/lib/ads/service";
 import { trackShop } from "../shop-spy/actions";
 import { addWatchTerm } from "../sammler/actions";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
-import { AdCard, AdGrid } from "@/components/ads/ad-card";
+import { AdCard, AdGrid, fmtNumber } from "@/components/ads/ad-card";
+import { StatTile } from "@/components/ui/stat-tile";
+import { summarizeAds } from "@/lib/ads/verdict";
 import { loadAdCards } from "@/lib/ads/feed";
 
 export const metadata: Metadata = { title: "Ad Spy" };
@@ -170,8 +172,28 @@ async function Results({
     ? `/ad-spy?${new URLSearchParams({ q: query.terms, land: query.country, status: query.status, plattform: query.platform, art: query.searchType, nach: nextCursor })}`
     : null;
 
+  const sum = summarizeAds(cards, now);
+
   return (
     <div className="space-y-6">
+      {cards.length ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile label="Laufende Anzeigen" value={sum.active} hint={`von ${sum.total} gespeicherten Treffern`} />
+          <StatTile
+            label="Bewährt (30+ Tage aktiv)"
+            value={sum.proven}
+            hint="Signal: lange Laufzeit lohnt sich meist"
+            title="Anzeigen, die seit mindestens 30 Tagen laufen. Signal, kein Beweis für Umsatz."
+          />
+          <StatTile label="Werbetreibende" value={sum.advertisers} hint={sum.longestDays !== null ? `längste Laufzeit ${sum.longestDays} Tage` : undefined} />
+          <StatTile
+            label="EU-Reichweite (Summe)"
+            value={sum.reach !== null ? fmtNumber(sum.reach) : "–"}
+            hint="laut Meta, nur EU-Anzeigen"
+            title="Personen, die die Anzeigen in der EU gesehen haben, laut Meta. Für andere Länder liefert Meta keine Reichweite."
+          />
+        </div>
+      ) : null}
       {groups.length ? (
         <Card>
           <CardHeader

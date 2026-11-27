@@ -91,7 +91,7 @@ Zeichen: ✅ erledigt · 🟡 teilweise · ❌ fehlt · ⛔ nicht machbar (Grund
 
 ## Gefühl und Look (Wunsch 27.11.2026: „Website ist trocken, hat kein Gefühl“)
 - 🟡 Google Trends: Kennzahl-Kacheln, Mini-Verläufe, Einschätzungen, verwandte Begriffe (PR „Google Trends lebendiger“)
-- ❌ Ad Spy: grössere Karten mit abspielbarer Vorschau, Kennzahlen, Laufzeit-Verlauf
+- 🟡 Ad Spy: Einschätzungen auf den Karten („neu“, „bewährt“, „Dauerläufer“, „Shop skaliert“) und Kennzahl-Kacheln über den Treffern (PR #18). Abspielbare Vorschau ist gebaut, aber ohne Meta-Token ungetestet
 - ❌ Shop Spy und Startup Spy: Mini-Verläufe und Einschätzungen
 - ❌ Future Radar findet Themen selbst
 - Ehrlich: Ohne Meta-Token und DataForSEO bleiben Ad Spy und Trends leer; Design allein macht sie nicht lebendig
