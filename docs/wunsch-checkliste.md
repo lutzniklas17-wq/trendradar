@@ -10,7 +10,7 @@ Zeichen: ✅ erledigt · 🟡 teilweise · ❌ fehlt · ⛔ nicht machbar (Grund
 1. KI-Analyse und Bewertung auf der Produkt-Detailseite (Seite ist da, aber leer)
 2. Filter nach Kategorie auf „Produkte“ (Beauty, Fitness, Pet …), dazu „steigend/fallend“
 3. Globale Suche über alle Bereiche (heute sucht sie nur einen Teil)
-4. Google Trends: verwandte und steigende Suchbegriffe, Vergleich nach Regionen
+4. ~~Google Trends: verwandte und steigende Suchbegriffe, Vergleich nach Regionen~~ (gebaut 27.11., wartet auf DataForSEO-Test)
 5. Produkte nebeneinander vergleichen (auch gemerkte)
 6. Future Radar: Themen automatisch finden und mit KI einschätzen
 
@@ -67,8 +67,10 @@ Zeichen: ✅ erledigt · 🟡 teilweise · ❌ fehlt · ⛔ nicht machbar (Grund
 
 ## Google Trends
 - ✅ Suchinteresse im Zeitverlauf, bis 5 Begriffe vergleichen, Land und Zeitraum wählbar, Diagramm
-- ❌ Verwandte und steigende Suchbegriffe, aufkommende Themen
-- ❌ Vergleich nach Regionen (Karte/Liste)
+- 🟡 Verwandte und steigende Suchbegriffe, steigende Themen (gebaut 27.11., für den ersten Begriff; noch nicht mit echtem Konto getestet)
+- 🟡 Vergleich nach Regionen als Liste mit Balken (gebaut 27.11., ungetestet; keine Karte)
+- 🟡 Kurze Einschätzung je Begriff („steigt stark“, „fällt“ …) mit Mini-Verlauf, aktuellem Wert, Veränderung, Höchststand (Regel, keine Prognose)
+- ✅ „Zuletzt abgefragt“ als Karten mit Mini-Verlauf (öffnen innerhalb 24 h kostet nichts)
 - ❌ Automatisch „stark steigende Suchanfragen“ auf der Startseite (läuft heute nur, wenn du selbst suchst)
 
 ## Startup Spy
@@ -86,6 +88,13 @@ Zeichen: ✅ erledigt · 🟡 teilweise · ❌ fehlt · ⛔ nicht machbar (Grund
 ## Globale Suche
 - 🟡 Sucht nur in gespeicherten Einträgen (Trend Spy, Startups, Radar)
 - ❌ Bibliothek, Anzeigen, Shops, News und Google Trends fehlen in der Suche; es gibt keine Ansicht „alles zu einem Begriff“
+
+## Gefühl und Look (Wunsch 27.11.2026: „Website ist trocken, hat kein Gefühl“)
+- 🟡 Google Trends: Kennzahl-Kacheln, Mini-Verläufe, Einschätzungen, verwandte Begriffe (PR „Google Trends lebendiger“)
+- 🟡 Ad Spy: Einschätzungen auf den Karten („neu“, „bewährt“, „Dauerläufer“, „Shop skaliert“) und Kennzahl-Kacheln über den Treffern (PR #18). Abspielbare Vorschau ist gebaut, aber ohne Meta-Token ungetestet
+- ❌ Shop Spy und Startup Spy: Mini-Verläufe und Einschätzungen
+- ❌ Future Radar findet Themen selbst
+- Ehrlich: Ohne Meta-Token und DataForSEO bleiben Ad Spy und Trends leer; Design allein macht sie nicht lebendig
 
 ## Startseite, Favoriten, Inbox, News
 - ✅ Startseite mit „Top 10 des Tages“ und „Neu seit gestern“

@@ -5,6 +5,7 @@ import { buttonClass } from "@/components/ui/button";
 import { AdPreview } from "@/components/ads/ad-preview";
 import { domainUrl, runningDays, type AdCardData } from "@/lib/ads/feed";
 import { libraryUrl } from "@/lib/ads/meta";
+import { adSignals } from "@/lib/ads/verdict";
 import { cn } from "@/lib/utils";
 
 const PLATFORM_SHORT: Record<string, string> = { FACEBOOK: "FB", INSTAGRAM: "IG", MESSENGER: "MSG", AUDIENCE_NETWORK: "AN", THREADS: "TH" };
@@ -49,6 +50,7 @@ export function AdCard({ ad, canEmbed, rank }: { ad: AdCardData; canEmbed: boole
   const shop = domainUrl(ad.domain);
   const countries = ad.countries ?? [];
   const library = libraryUrl(ad.external_id);
+  const signals = adSignals(ad);
 
   return (
     <article className="flex min-w-0 flex-col rounded-lg border border-border bg-surface shadow-xs">
@@ -83,6 +85,15 @@ export function AdCard({ ad, canEmbed, rank }: { ad: AdCardData; canEmbed: boole
           <CalendarDays className="size-3.5" aria-hidden />
           {fmtDate(ad.started_at)} → {running ? "heute" : fmtDate(ad.stopped_at)}
         </span>
+        {signals.length ? (
+          <span className="ml-auto flex gap-1">
+            {signals.map((s) => (
+              <Badge key={s.key} tone={s.tone} title={s.title}>
+                {s.label}
+              </Badge>
+            ))}
+          </span>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3">

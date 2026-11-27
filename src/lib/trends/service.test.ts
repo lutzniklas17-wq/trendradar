@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrendQuery } from "./dataforseo";
 
 vi.mock("server-only", () => ({}));
-const { getTrend, fetchExploreLive } = await import("./service");
+const { getTrend, fetchExploreLive, getTrendInsights } = await import("./service");
 
 type Call = { table: string; op: string; args: unknown[] };
 
@@ -108,5 +108,39 @@ describe("getTrend", () => {
     const r = await getTrend(client, query, f);
     expect(r).toEqual({ status: "error", message: "Payment Required." });
     expect(calls.some((c) => c.table === "sources" && c.op === "update")).toBe(true);
+  });
+});
+
+describe("getTrendInsights", () => {
+  const insightsOk = {
+    status_code: 20000,
+    tasks: [{ status_code: 20000, cost: 0.011, result: [{ items: [{ type: "google_trends_queries_list", data: { top: [], rising: [{ query: "led maske kaufen", value: 120 }] } }] }] }],
+  };
+
+  it("nimmt den Zwischenspeicher mit eigenem Zeitraum-Schlüssel", async () => {
+    const f = vi.fn();
+    const { client, calls } = fakeSupabase({ cache: { payload: { keyword: "led maske" }, fetched_at: "2026-11-26T09:00:00Z" } });
+    const r = await getTrendInsights(client, { ...query, keywords: ["led maske", "andere"] }, f);
+    expect(r).toMatchObject({ status: "ok", fromCache: true });
+    expect(f).not.toHaveBeenCalled();
+    expect(calls.some((c) => c.op === "eq" && c.args[0] === "time_range" && c.args[1] === "insights:past_12_months")).toBe(true);
+  });
+
+  it("hält das gemeinsame Tageslimit ein", async () => {
+    vi.stubEnv("DATAFORSEO_DAILY_LIMIT", "2");
+    const f = vi.fn();
+    const { client } = fakeSupabase({ count: 2 });
+    expect(await getTrendInsights(client, query, f)).toEqual({ status: "limit_reached", limit: 2 });
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("ruft live ab und speichert nur den ersten Begriff", async () => {
+    const f = vi.fn(async () => new Response(JSON.stringify(insightsOk), { status: 200 }));
+    const { client, calls } = fakeSupabase({ count: 0 });
+    const r = await getTrendInsights(client, { ...query, keywords: ["led maske", "andere"] }, f);
+    expect(r.status).toBe("ok");
+    if (r.status === "ok") expect(r.insights.risingQueries[0].label).toBe("led maske kaufen");
+    const insert = calls.find((c) => c.table === "trend_series" && c.op === "insert");
+    expect(insert?.args[0]).toMatchObject({ keywords: ["led maske"], time_range: "insights:past_12_months" });
   });
 });
