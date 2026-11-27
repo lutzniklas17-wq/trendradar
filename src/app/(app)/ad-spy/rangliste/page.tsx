@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLink, Trophy } from "lucide-react";
-import { PageHeader } from "@/components/layout/page-header";
+import { ExternalLink, Megaphone, Trophy } from "lucide-react";
+import { BrowseHeader } from "@/components/layout/browse-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge, ProvenanceBadge } from "@/components/ui/badge";
-import { FilterBar } from "@/components/ui/filter-bar";
+import { FilterPanel } from "@/components/ui/filter-panel";
 import { QuickChips } from "@/components/ui/quick-chips";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AdSpyNav } from "@/components/ads/ad-spy-nav";
@@ -53,50 +53,82 @@ export default async function RanglistePage({ searchParams }: PageProps<"/ad-spy
     ? await loadAdCards(supabase, ads.rows.map((r) => r.id), new Map(ads.rows.map((r) => [r.id, r.countries])))
     : { cards: [] };
   const advertiserName = advertiserParam ? (ads?.rows[0]?.advertiser_name ?? "Werbetreibender") : null;
+  // Filter-Links behalten Ansicht, Sortierung und den gewählten Werbetreibenden.
+  const panelHref = (change: Partial<typeof f>) => {
+    const href = rankHref({ ...f, view, sort: sortValue }, change);
+    return advertiserParam ? `${href}&werbetreibender=${advertiserParam}` : href;
+  };
   const windowLabel = RANK_WINDOWS.find((w) => w.value === String(f.days))?.label ?? "";
 
   return (
     <>
-      <PageHeader
-        title="Ad Spy"
-        description="Rangliste aus den selbst gesammelten Daten: täglicher Sammellauf über deine Stichwörter plus jede Live-Suche mit Status „Aktiv“. Meta selbst liefert keine globale Rangliste; hier zählt nur, was TrendRadar gesehen hat."
+      <BrowseHeader
+        icon={Megaphone}
+        title="Anzeigen"
+        accent="durchsuchen"
+        description="Aus deinen täglichen Sammelläufen und Live-Suchen. Meta liefert keine Rangliste, hier zählt, was TrendRadar gesehen hat."
       />
       <AdSpyNav active="rangliste" />
 
-      <Card className="mb-6">
-        <FilterBar
-          path="/ad-spy/rangliste"
-          query={null}
-          keep={{ ansicht: view, ...(advertiserParam ? { werbetreibender: advertiserParam } : {}) }}
+      <QuickChips
+        className="px-0 pt-0"
+        items={[
+          { label: "Meiste aktive Anzeigen", href: rankHref(f, { view: "werbetreibende", sort: "active" }), active: view === "werbetreibende" && f.sort === "active" },
+          { label: "Skaliert gerade", href: rankHref(f, { view: "werbetreibende", sort: "new" }), active: view === "werbetreibende" && f.sort === "new", title: "Meiste neue Anzeigen in 7 Tagen" },
+          { label: "Längste Laufzeit", href: rankHref(f, { view: "anzeigen", sort: "longest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "longest" },
+          { label: "Neueste Anzeigen", href: rankHref(f, { view: "anzeigen", sort: "newest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "newest" },
+          { label: "Grösste EU-Reichweite", href: rankHref(f, { view: "anzeigen", sort: "reach" }), active: view === "anzeigen" && !advertiserParam && f.sort === "reach" },
+        ]}
+      />
+      <div className="mb-6">
+        <FilterPanel
+          resetHref={panelHref({ days: 2, country: null, platform: null, termId: null })}
           active={Boolean(f.country || f.platform || f.termId || f.days !== 2)}
-          controls={[
-            { kind: "select", name: "sortierung", label: "Sortierung", value: sortValue, options: sorts },
-            { kind: "select", name: "zeitraum", label: "Aktiv gesehen", value: String(f.days), options: RANK_WINDOWS },
-          ]}
           groups={[
             {
-              title: "Ort",
-              controls: [
-                { kind: "select", name: "land", label: "Land", value: f.country ?? "", options: [{ value: "", label: "Alle Länder" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: "EU", label: "EU gesamt (Shop-Zählung)" }] },
+              title: "Anzeige",
+              items: [
+                { kind: "choice", icon: "sort", label: "Sortierung", options: sorts.map((o) => ({ label: o.label, active: o.value === sortValue, href: panelHref({ sort: o.value }) })) },
+                { kind: "choice", icon: "calendar", label: "Aktiv gesehen", options: RANK_WINDOWS.map((o) => ({ label: o.label, active: o.value === String(f.days), href: panelHref({ days: Number(o.value) }) })) },
               ],
             },
-            { title: "Plattform", controls: [{ kind: "select", name: "plattform", label: "Plattform", value: f.platform ?? "", options: RANK_PLATFORMS }] },
+            {
+              title: "Ort",
+              items: [
+                {
+                  kind: "choice",
+                  icon: "globe",
+                  label: "Land",
+                  options: [{ value: "", label: "Alle Länder" }, ...AD_COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: "EU", label: "EU gesamt (Shop-Zählung)" }].map((o) => ({
+                    label: o.label,
+                    active: o.value === (f.country ?? ""),
+                    href: panelHref({ country: o.value || null }),
+                  })),
+                },
+              ],
+            },
+            {
+              title: "Plattform",
+              items: [{ kind: "choice", icon: "layers", label: "Plattform", options: RANK_PLATFORMS.map((o) => ({ label: o.label, active: o.value === (f.platform ?? ""), href: panelHref({ platform: o.value || null }) })) }],
+            },
             {
               title: "Quelle",
-              controls: [{ kind: "select", name: "stichwort", label: "Stichwort", value: f.termId ?? "", options: [{ value: "", label: "Alle Stichwörter" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))] }],
+              items: [
+                {
+                  kind: "choice",
+                  icon: "tag",
+                  label: "Stichwort",
+                  options: [{ value: "", label: "Alle Stichwörter" }, ...terms.map((t) => ({ value: t.id, label: `${t.term} (${t.country})` }))].map((o) => ({
+                    label: o.label,
+                    active: o.value === (f.termId ?? ""),
+                    href: panelHref({ termId: o.value || null }),
+                  })),
+                },
+              ],
             },
           ]}
         />
-        <QuickChips
-          items={[
-            { label: "Meiste aktive Anzeigen", href: rankHref(f, { view: "werbetreibende", sort: "active" }), active: view === "werbetreibende" && f.sort === "active" },
-            { label: "Skaliert gerade", href: rankHref(f, { view: "werbetreibende", sort: "new" }), active: view === "werbetreibende" && f.sort === "new", title: "Meiste neue Anzeigen in 7 Tagen" },
-            { label: "Längste Laufzeit", href: rankHref(f, { view: "anzeigen", sort: "longest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "longest" },
-            { label: "Neueste Anzeigen", href: rankHref(f, { view: "anzeigen", sort: "newest" }), active: view === "anzeigen" && !advertiserParam && f.sort === "newest" },
-            { label: "Grösste EU-Reichweite", href: rankHref(f, { view: "anzeigen", sort: "reach" }), active: view === "anzeigen" && !advertiserParam && f.sort === "reach" },
-          ]}
-        />
-      </Card>
+      </div>
 
       {error ? (
         <Card className="mb-6 border-warning/40">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { ExternalLink } from "lucide-react";
-import { PageHeader } from "@/components/layout/page-header";
+import { ExternalLink, Megaphone } from "lucide-react";
+import { BrowseHeader } from "@/components/layout/browse-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Ad Spy TikTok" };
 export default function TikTokPage() {
   return (
     <>
-      <PageHeader title="Ad Spy" description="Anzeigen aus offiziellen Werbebibliotheken." />
+      <BrowseHeader icon={Megaphone} title="Anzeigen" accent="durchsuchen" description="Anzeigen aus offiziellen Werbebibliotheken." />
       <AdSpyNav active="tiktok" />
       <Card>
         <CardHeader

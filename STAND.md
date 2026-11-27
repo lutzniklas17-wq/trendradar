@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Produkte-Bibliothek + Start-Dashboard, Minea-Layout Teil 2 gemergt)_
+_Zuletzt aktualisiert: 26.11.2026 (Minea-Layout Teil 3: Produkte-Suche mit Herkunft, Filterpanel)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -64,6 +64,13 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - Shop Spy: Tabelle ersetzt durch `src/components/shops/shop-row.tsx` (Verlaufslinie 60 Tage über `src/lib/sparkline.ts`, Kennzahlen). `src/lib/shops/list-href.ts` für Chips.
   - `src/components/library/product-row.tsx`: Produktzeile (Bild | Titel, Datum, Einkaufspreis, Link | Lieferant: von Shops übernommen, Gratisversand, Video | Anzeigen). Startseite-Tab Produkte nutzt sie. **Abgesprochen mit Produkte-Thread (PR #10):** Darstellung der Produktliste gehört diesem Thread; `/produkte` wird erst nach Merge von #10 auf Zeilen umgestellt. Reihenfolge: PR #11 vor PR #10 mergen (PR #10 enthält #11 bereits).
   - Navigation: Trend Spy heisst wieder „Trend Spy“; „Produkte“ ist `/produkte` aus PR #10.
+- Layout Minea-Stil Teil 3 (Branch `claude/project-thread-hrpdjy`, keine Migration, enthält den Plattform-Stand von PR #15):
+  - Neu `src/components/layout/browse-header.tsx` (Icon, Titel mit Akzentwort, Untertitel, Aktion) auf Produkte, Anzeigen (Live/Rangliste/TikTok) und Shop Spy.
+  - Neu `src/components/ui/filter-panel.tsx`: Filter in Gruppen-Spalten, jede Auswahl als Popover-Liste aus Links (nur eine offen, Klick daneben/Escape schliesst). Ersetzt `FilterBar` auf `/produkte` und der Rangliste.
+  - `QuickChips` als Pillen mit farbigem Punkt (`var(--chart-n)`).
+  - `/produkte`: oben grosse Suche = Live-Suche bei den Plattformen (Begriff + Plattform-Auswahl, darunter Lager und „täglich“), Top-Hits als Karussell nur ohne Suche, Schnellfilter, Filterpanel mit Gruppe „Herkunft“ (Plattform), Produktzeilen. Ohne verbundene Plattform: grosse Suche filtert die gespeicherten Produkte (`filter`).
+  - `product-row.tsx`: Plattform-Logo + „von {Plattform}“ verlinkt, Beliebtheit je Plattform (`popularity`/`popularityHint` aus `librarySource`), Merken-Knopf unten rechts.
+  - Design-Regeln in `CLAUDE.md` angepasst (font-semibold für Seitentitel/Produkttitel/Preise, rounded-xl Zeilen, Pillen nur für Schnellfilter, Nutzer bestätigt Indigo).
 - Quellen geprüft 26.11.2026: Kickstarter/Indiegogo ohne offene API (nur Links). SHAB-API (amtsblattportal.ch, Neueintragungen HR01) existiert, Doku per robots gesperrt und kein Netz in der Sandbox → nicht gebaut, erst mit echtem Test.
 - Recherche 26.11.2026: Reddit API braucht Freigabe (neue Zugänge laut Sekundärquellen seit 31.10.2026 zu), daher nicht gebaut. Shopify `/products.json` ist keine offizielle API (Shopify-Mitarbeiter: wollen es einschränken), daher nicht gebaut. Product Hunt v2: Developer Token, nicht kommerziell, 6250 Komplexitätspunkte/15 min.
 
@@ -105,4 +112,4 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-PR #11 mergen, dann PR #10 (nach Migration 0008), dann mit echtem CJ-Key prüfen. Danach `/produkte` auf `ProductRow` und Filterpanel umstellen (Layout-Thread). KI auch für unklare Startup-Relevanz und Future-Radar; Meta-Vorschau mit echtem Token prüfen; optional SHAB-Neueintragungen.
+PR #11 mergen, dann PR #10 (nach Migration 0008), dann mit echtem CJ-Key prüfen. `/produkte` ist auf Zeilen und Filterpanel umgestellt (Teil 3); im Browser mit echten Daten prüfen. KI auch für unklare Startup-Relevanz und Future-Radar; Meta-Vorschau mit echtem Token prüfen; optional SHAB-Neueintragungen.
