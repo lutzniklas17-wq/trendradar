@@ -241,10 +241,10 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
                 maxLength={80}
                 defaultValue={filters.term}
                 placeholder="Produkt suchen (englisch), z. B. „posture corrector“"
-                className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-xs`}
+                className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-card`}
               />
             </label>
-            <Select name="plattform" aria-label="Plattform" options={searchPlatforms} defaultValue={filters.platform} className="h-12 w-auto rounded-xl text-[13px] shadow-xs" />
+            <Select name="plattform" aria-label="Plattform" options={searchPlatforms} defaultValue={filters.platform} className="h-12 w-auto rounded-xl text-[13px] shadow-card" />
             <SubmitButton pendingLabel="Suche läuft …" className="h-12 rounded-xl px-5">
               Suchen
             </SubmitButton>
@@ -271,7 +271,7 @@ export default async function ProduktePage({ searchParams }: PageProps<"/produkt
               type="search"
               defaultValue={filters.text}
               placeholder="Gespeicherte Produkte nach Name durchsuchen"
-              className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-xs`}
+              className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-card`}
             />
           </label>
           <button type="submit" className={buttonClass("primary", "md", "h-12 rounded-xl px-5")}>

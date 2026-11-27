@@ -85,7 +85,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
 
       {lead ? (
         <div className="space-y-6">
-          <Link href={`/news/${lead.id}`} className="group grid overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong md:grid-cols-2">
+          <Link href={`/news/${lead.id}`} className="group grid overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-colors duration-150 hover:border-border-strong md:grid-cols-2">
             <NewsImage src={lead.image_url} alt="" className="aspect-[16/9] w-full md:aspect-auto md:h-full" />
             <div className="flex flex-col justify-center gap-2 p-5">
               <p className="text-[13px] text-muted">
@@ -100,7 +100,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/news/${a.id}`} className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong">
+                  <Link href={`/news/${a.id}`} className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-colors duration-150 hover:border-border-strong">
                     <NewsImage src={a.image_url} alt="" className="aspect-[16/9] w-full" />
                     <div className="flex flex-1 flex-col gap-1.5 p-4">
                       <p className="text-xs text-muted">

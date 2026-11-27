@@ -9,7 +9,7 @@ const nf = new Intl.NumberFormat("de-CH");
 
 function Tile({ href, icon: Icon, label, value, hint }: { href: string; icon: LucideIcon; label: string; value: number | null; hint: string }) {
   return (
-    <Link href={href} className="group rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors duration-150 hover:border-border-strong">
+    <Link href={href} className="group rounded-lg border border-border bg-surface p-4 shadow-card transition-colors duration-150 hover:border-border-strong">
       <div className="flex items-center justify-between text-[13px] text-muted">
         <span className="flex items-center gap-1.5">
           <Icon className="size-3.5" aria-hidden strokeWidth={1.75} /> {label}

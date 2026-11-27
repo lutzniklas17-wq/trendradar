@@ -15,7 +15,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           required
-          className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm shadow-xs outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
+          className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm shadow-card outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
       </label>
       <label className="block text-sm">
@@ -25,7 +25,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm shadow-xs outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
+          className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm shadow-card outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
       </label>
       {state.error ? (

@@ -43,3 +43,13 @@ export function isNavActive(pathname: string, item: Pick<NavItem, "href" | "matc
   const base = item.match ?? item.href;
   return base === "/" ? pathname === "/" : pathname === base || pathname.startsWith(`${base}/`);
 }
+
+/** Cookie für den eingeklappten Zustand der Seitenleiste ("collapsed" | "open"). */
+export const SIDEBAR_COOKIE = "sidebar";
+
+/** Schnellsuche: passt der Begriff zu Name oder Beschreibung eines Bereichs (ohne Gross-/Kleinschreibung)? */
+export function matchesNav(item: Pick<NavItem, "label" | "description">, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return item.label.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
+}

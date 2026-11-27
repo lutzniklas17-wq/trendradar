@@ -31,7 +31,7 @@ export function CreateProductForm() {
           defaultValue={state.values?.description}
           maxLength={2000}
           rows={3}
-          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-subtle hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
+          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm shadow-card outline-none transition-colors placeholder:text-subtle hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
       </label>
 

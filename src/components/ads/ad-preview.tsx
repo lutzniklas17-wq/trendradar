@@ -43,7 +43,7 @@ export function AdPreview({
             href={libraryHref}
             target="_blank"
             rel="noreferrer"
-            className="absolute right-2 bottom-2 inline-flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-[12px] text-muted shadow-xs transition-colors duration-150 hover:text-foreground"
+            className="absolute right-2 bottom-2 inline-flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-[12px] text-muted shadow-card transition-colors duration-150 hover:text-foreground"
             title="Falls die Vorschau leer bleibt: Meta lässt die Einbettung gerade nicht zu."
           >
             Lädt nicht? Ad Library <ExternalLink className="size-3" aria-hidden />
@@ -57,7 +57,7 @@ export function AdPreview({
             <button
               type="button"
               onClick={() => setLoaded(true)}
-              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-xs transition-colors duration-150 hover:border-border-strong"
+              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-colors duration-150 hover:border-border-strong"
             >
               <Play className="size-3.5 text-accent" aria-hidden /> Vorschau abspielen
             </button>
@@ -67,7 +67,7 @@ export function AdPreview({
               target="_blank"
               rel="noreferrer"
               title="Eingebettete Vorschau braucht das Meta-Token (README „Meta Ad Spy“)."
-              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-xs transition-colors duration-150 hover:border-border-strong"
+              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-colors duration-150 hover:border-border-strong"
             >
               <Play className="size-3.5 text-accent" aria-hidden /> In der Ad Library ansehen
             </a>
