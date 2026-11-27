@@ -48,8 +48,8 @@ export default async function WatchlistPage({ searchParams }: PageProps<"/watchl
           <CardHeader title={`${favShops.length} favorisierte Shops`} description="Jede Veränderung der aktiven Anzeigen wird in der Inbox gemeldet." />
           <ul className="divide-y divide-border border-t border-border text-sm">
             {favShops.map((s) => (
-              <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                <Link href={`/shop-spy/${s.id}`} className="font-medium hover:text-accent">
+              <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors duration-150 hover:bg-surface-hover">
+                <Link href={`/shop-spy/${s.id}`} className="font-medium transition-colors duration-150 hover:text-accent">
                   {s.name}
                 </Link>
                 <FavoriteShopButton id={s.id} favorite />

@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireOwner } from "@/lib/auth";
-import type { Change } from "@/lib/inbox";
+import { countChanges, type Change } from "@/lib/inbox";
+import { StatTile } from "@/components/ui/stat-tile";
 import { markAllRead } from "./actions";
 
 export const metadata: Metadata = { title: "Inbox" };
@@ -45,6 +46,7 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
   const { data, error } = await supabase.from("inbox_entries").select("id, created_at, job, title, changes, read_at").order("created_at", { ascending: false }).limit(100);
   const all = (data ?? []) as Entry[];
   const unread = all.filter((e) => !e.read_at).length;
+  const counts = countChanges(all);
   const entries = all
     .filter((e) => !job || e.job === job)
     .map((e) => ({ ...e, changes: e.changes.filter((c) => (!kind || c.kind === kind) && (!onlyFav || c.favorite)) }))
@@ -63,6 +65,15 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
         ) : null}
       </PageHeader>
       {error ? <Notice>Die Inbox fehlt noch. Bitte die Migration 0006 in Supabase ausführen.</Notice> : null}
+
+      {all.length ? (
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatTile icon={Inbox} label="Ungelesene Updates" value={unread} />
+          <StatTile icon={Plus} label="Neu" value={counts.added} hint="in den letzten 100 Updates" />
+          <StatTile icon={Pencil} label="Geändert" value={counts.changed} hint="in den letzten 100 Updates" />
+          <StatTile icon={Minus} label="Entfernt / beendet" value={counts.removed} hint="in den letzten 100 Updates" />
+        </div>
+      ) : null}
 
       {all.length ? (
         <div className="mb-6">
@@ -94,14 +105,14 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
                   const k = KIND_STYLE[c.kind] ?? KIND_STYLE.changed;
                   const Icon = k.icon;
                   const label = c.href ? (
-                    <Link href={c.href} className="font-medium hover:text-accent">
+                    <Link href={c.href} className="font-medium transition-colors duration-150 hover:text-accent">
                       {c.label}
                     </Link>
                   ) : (
                     <span className="font-medium">{c.label}</span>
                   );
                   return (
-                    <li key={i} className="flex items-start gap-3 px-5 py-2.5">
+                    <li key={i} className="flex items-start gap-3 px-5 py-2.5 transition-colors duration-150 hover:bg-surface-hover">
                       <Icon className={`mt-0.5 size-4 shrink-0 ${k.className}`} aria-label={k.label} />
                       <div className="min-w-0">
                         <p>

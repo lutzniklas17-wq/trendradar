@@ -57,7 +57,7 @@ export function AdPreview({
             <button
               type="button"
               onClick={() => setLoaded(true)}
-              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-colors duration-150 hover:border-border-strong"
+              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover"
             >
               <Play className="size-3.5 text-accent" aria-hidden /> Vorschau abspielen
             </button>
@@ -67,7 +67,7 @@ export function AdPreview({
               target="_blank"
               rel="noreferrer"
               title="Eingebettete Vorschau braucht das Meta-Token (README „Meta Ad Spy“)."
-              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-colors duration-150 hover:border-border-strong"
+              className="absolute inset-x-0 bottom-3 mx-auto inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[13px] font-medium shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover"
             >
               <Play className="size-3.5 text-accent" aria-hidden /> In der Ad Library ansehen
             </a>

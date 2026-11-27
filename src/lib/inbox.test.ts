@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactChanges, shopChange, type Change } from "./inbox";
+import { compactChanges, countChanges, shopChange, type Change } from "./inbox";
 
 describe("Inbox", () => {
   it("meldet Shop-Änderungen nur, wenn sie wirklich etwas bedeuten", () => {
@@ -17,5 +17,16 @@ describe("Inbox", () => {
     many.push({ kind: "changed", label: "Fav", favorite: true });
     const out = compactChanges(many, 4);
     expect(out.map((c) => c.label)).toEqual(["Fav", "A0", "A1", "… und 8 weitere Änderungen"]);
+  });
+});
+
+describe("countChanges", () => {
+  it("zählt Änderungen über alle Einträge nach Art", () => {
+    const entries = [
+      { changes: [{ kind: "added", label: "a" }, { kind: "removed", label: "b" }] as Change[] },
+      { changes: [{ kind: "added", label: "c" }] as Change[] },
+    ];
+    expect(countChanges(entries)).toEqual({ added: 2, changed: 0, removed: 1 });
+    expect(countChanges([])).toEqual({ added: 0, changed: 0, removed: 0 });
   });
 });

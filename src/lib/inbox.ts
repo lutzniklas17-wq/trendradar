@@ -36,3 +36,10 @@ export function shopChange(prev: number | null, now: number, favorite: boolean):
   const diff = Math.abs(now - prev);
   return diff >= 3 && diff >= prev * 0.25 ? "changed" : null;
 }
+
+/** Zählt die Änderungen aller Einträge nach Art (für die Kennzahlen oben in der Inbox). */
+export function countChanges(entries: { changes: Change[] }[]): Record<ChangeKind, number> {
+  const counts: Record<ChangeKind, number> = { added: 0, changed: 0, removed: 0 };
+  for (const e of entries) for (const c of e.changes) counts[c.kind] += 1;
+  return counts;
+}

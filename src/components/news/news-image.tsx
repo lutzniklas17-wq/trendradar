@@ -11,6 +11,10 @@ export function NewsImage({ src, alt, className }: { src: string | null; alt: st
     );
   }
   // Fremde Bilder ohne Optimierung einbinden: kein Proxy, kein Speichern, Verlag sieht keine Herkunftsseite.
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer" className={cn("object-cover", className)} />;
+  return (
+    <div className={cn("overflow-hidden bg-surface-muted", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]" />
+    </div>
+  );
 }
