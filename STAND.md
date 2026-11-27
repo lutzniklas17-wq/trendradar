@@ -83,6 +83,11 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - Aufteilung mit Layout-Thread: Daten/Logik hier, Darstellung (product-row, product-card, filter-bar, Markup von `/produkte`) dort.
 - Weitere Quellen geprüft 26.11.2026: eBay Browse API (kostenlos, offiziell) wäre als Verkaufspreis-Vergleich möglich, nicht als Lieferant. Spocket, Zendrop, AutoDS: keine öffentliche Produkt-API. Temu, Alibaba, DHgate: keine offene Such-API, bleiben Links.
 
+- Thread „Ad Spy und Google Trends lebendiger machen“ (27.11.2026, Branch `claude/project-thread-s833hs`). Auftrag: Seite wirkt „trocken, ohne Gefühl“; Ziel Minea-Gefühl (grosse Bilder/Videos, Kennzahlen, Kurven, Mini-Verläufe, Einschätzungen), clean, Indigo. AliExpress zurückgestellt (Niklas unter 18, Konto eröffnet später ein Elternteil). Plan in kleinen PRs: (1) Google Trends, (2) Ad Spy, (3) Shop/Startup Spy, (4) Future Radar automatisch.
+  - PR 1 Google Trends: `src/lib/trends/insights.ts` (+Tests): zweite DataForSEO-Aufgabe nur für den ersten Begriff mit `google_trends_map`, `google_trends_queries_list`, `google_trends_topics_list` (Doku: Listen nur mit 1 Begriff). Werte können Text sein („Breakout“ → null → „Durchbruch“). Feldnamen aus der Doku-Tabelle, **kein Beispiel-JSON in der Doku, mit echtem Konto prüfen**. Zwischenspeicher in `trend_series` mit `time_range = "insights:<zeitraum>"` (keine Migration), gleiches Tageslimit (zählt Aufgaben). `trendVerdict`: letztes vs. erstes Viertel, ±15 %/±50 % → steigt stark/steigt/stabil/fällt/fällt stark. `getRecentTrends` → Karten „Zuletzt abgefragt“. Neu `src/components/ui/sparkline.tsx`, `src/components/trends/insights.tsx` (KeywordStat, RelatedList, RegionList). Seite `/google-trends` mit BrowseHeader, grosser Suche, Zeitraum-Chips.
+  - Kosten: DataForSEO 0.011 USD pro Live-Aufgabe, Suche = 2 Aufgaben; 1 USD Startguthaben, Mindesteinzahlung 50 USD. Niklas wählte am 27.11. „erst gratis testen“.
+  - Meta-Token: von hier nicht prüfbar (kein Vercel-Zugang); Niklas prüft auf `/sammler` („META_ACCESS_TOKEN fehlt“).
+
 ## Wunsch-Checkliste (Abgleich 27.11.2026)
 Vollständige Liste aller Wünsche von Niklas mit Status: `docs/wunsch-checkliste.md`. **Jeder Thread trägt neue Wünsche dort ein und prüft die Liste vor „fertig“.**
 
@@ -126,4 +131,4 @@ Offen (❌ fehlt, 🟡 teilweise), Reihenfolge = Empfehlung:
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-PRs #10–#16 sind gemergt. Als Nächstes Punkte 1–6 der Wunsch-Checkliste (oben), erst nach Freigabe durch Niklas. Parallel mit echten Schlüsseln prüfen: CJ (läuft), AliExpress (wartet auf App-Freigabe), Meta-Vorschau, DataForSEO, Anthropic.
+PRs #10–#17 sind gemergt. Thread „lebendiger machen“: nach PR 1 (Google Trends) folgt PR 2 Ad Spy (grössere Karten, Kennzahlen, Vorschau). Danach Punkte 1–6 der Wunsch-Checkliste (oben), erst nach Freigabe durch Niklas. Parallel mit echten Schlüsseln prüfen: CJ (läuft), AliExpress (wartet auf App-Freigabe), Meta-Vorschau, DataForSEO, Anthropic.

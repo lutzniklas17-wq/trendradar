@@ -28,13 +28,14 @@ keine unzulässigen Scraping-Methoden.
 
 ## Google Trends (DataForSEO)
 
-Die Seite „Google Trends“ fragt DataForSEO ab (Endpoint `google_trends/explore/live`, laut Preisseite 0.011 USD pro Abfrage).
+Die Seite „Google Trends“ fragt DataForSEO ab (Endpoint `google_trends/explore/live`, laut Preisseite 0.011 USD pro Aufgabe).
+Eine Suche braucht zwei Aufgaben: die Kurve und für den ersten Begriff Regionen, verwandte Suchanfragen und Themen (laut Doku nur mit einem Begriff möglich). Also rund 0.022 USD pro neuer Suche. Neue Konten bekommen 1 USD Startguthaben, die Mindesteinzahlung danach ist 50 USD (Stand 27.11.2026).
 Ohne Zugangsdaten zeigt sie keine Kurven und keine Beispieldaten.
 
 1. Konto auf [app.dataforseo.com/register](https://app.dataforseo.com/register) eröffnen und E-Mail bestätigen.
 2. Im Dashboard unter **API Access** den **API-Login** und das **API-Passwort** kopieren (nicht das Login-Passwort der Website).
 3. In Vercel als `DATAFORSEO_LOGIN` und `DATAFORSEO_PASSWORD` eintragen, danach neu deployen.
-4. Optional `DATAFORSEO_DAILY_LIMIT` setzen (Standard 30 neue Abfragen pro Tag, also höchstens rund 0.33 USD).
+4. Optional `DATAFORSEO_DAILY_LIMIT` setzen (Standard 30 Aufgaben pro Tag, also höchstens rund 0.33 USD; eine Suche zählt zwei).
 
 Jede Antwort wird in `trend_series` gespeichert. Dieselbe Abfrage (Begriffe, Region, Zeitraum) innerhalb von 24 Stunden
 kommt aus dem Zwischenspeicher und kostet nichts.

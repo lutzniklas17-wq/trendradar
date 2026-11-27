@@ -11,6 +11,7 @@ import {
   type TrendQuery,
   type TrendResult,
 } from "@/lib/trends/dataforseo";
+import { buildInsightsTask, INSIGHTS_PREFIX, parseInsightsResponse, type TrendInsights } from "@/lib/trends/insights";
 
 /** Gespeicherte Antworten gelten 24 Stunden; danach wird neu abgefragt. */
 export const CACHE_HOURS = 24;
@@ -99,4 +100,125 @@ export async function getTrend(supabase: SupabaseClient, query: TrendQuery, fetc
       .eq("id", TRENDS_SOURCE_ID);
     return { status: "error", message };
   }
+}
+
+export type InsightsLookup =
+  | { status: "ok"; insights: TrendInsights; fetchedAt: string; fromCache: boolean }
+  | { status: "not_configured" }
+  | { status: "limit_reached"; limit: number }
+  | { status: "error"; message: string };
+
+/** Ruft Regionen, verwandte Suchanfragen und Themen für den ersten Begriff live ab (kostet eine zweite Aufgabe). */
+export async function fetchInsightsLive(
+  query: TrendQuery,
+  creds: { login: string; password: string },
+  fetchImpl: FetchFn = fetch,
+): Promise<TrendInsights> {
+  const auth = Buffer.from(`${creds.login}:${creds.password}`).toString("base64");
+  const res = await fetchImpl(DATAFORSEO_EXPLORE_URL, {
+    method: "POST",
+    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+    body: JSON.stringify(buildInsightsTask(query)),
+    signal: AbortSignal.timeout(45_000),
+    cache: "no-store",
+  });
+  if (res.status === 401) throw new DataForSeoError("Login oder Passwort von DataForSEO ist falsch.", 401);
+  if (!res.ok) throw new DataForSeoError(`DataForSEO antwortet mit HTTP ${res.status}.`, res.status);
+  return parseInsightsResponse(await res.json(), query.keywords[0]);
+}
+
+/**
+ * Zusatzdaten (Regionen, verwandte und steigende Suchanfragen, Themen) für den ersten Suchbegriff.
+ * Gleicher Zwischenspeicher (24 h) und gleiches Tageslimit wie die Kurve; gespeichert mit time_range „insights:…“.
+ */
+export async function getTrendInsights(supabase: SupabaseClient, query: TrendQuery, fetchImpl?: FetchFn): Promise<InsightsLookup> {
+  const keyword = query.keywords[0];
+  const timeRange = `${INSIGHTS_PREFIX}${query.timeRange}`;
+  const since = new Date(Date.now() - CACHE_HOURS * 3600_000).toISOString();
+  const cached = await supabase
+    .from("trend_series")
+    .select("payload, fetched_at")
+    .eq("source_id", TRENDS_SOURCE_ID)
+    .eq("geo", query.geo)
+    .eq("time_range", timeRange)
+    .filter("keywords", "eq", toPgArrayLiteral([keyword]))
+    .gte("fetched_at", since)
+    .order("fetched_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (cached.error) return { status: "error", message: "Zwischenspeicher nicht lesbar." };
+  if (cached.data) {
+    return { status: "ok", insights: cached.data.payload as TrendInsights, fetchedAt: cached.data.fetched_at, fromCache: true };
+  }
+
+  const env = getDataForSeoEnv();
+  if (!env) return { status: "not_configured" };
+
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const { count, error: countError } = await supabase
+    .from("trend_series")
+    .select("id", { count: "exact", head: true })
+    .eq("source_id", TRENDS_SOURCE_ID)
+    .gte("fetched_at", startOfDay.toISOString());
+  if (countError) return { status: "error", message: "Tageslimit konnte nicht geprüft werden." };
+  if ((count ?? 0) >= env.dailyLimit) return { status: "limit_reached", limit: env.dailyLimit };
+
+  try {
+    const insights = await fetchInsightsLive(query, env, fetchImpl);
+    const { data, error } = await supabase
+      .from("trend_series")
+      .insert({ keywords: [keyword], geo: query.geo, time_range: timeRange, source_id: TRENDS_SOURCE_ID, payload: insights })
+      .select("fetched_at")
+      .single();
+    return { status: "ok", insights, fetchedAt: error ? new Date().toISOString() : data.fetched_at, fromCache: false };
+  } catch (e) {
+    const message =
+      e instanceof DataForSeoError
+        ? e.message
+        : e instanceof Error && e.name === "TimeoutError"
+          ? "DataForSEO hat nicht rechtzeitig geantwortet."
+          : "DataForSEO ist nicht erreichbar.";
+    return { status: "error", message };
+  }
+}
+
+export type RecentTrend = {
+  keywords: string[];
+  geo: string;
+  timeRange: string;
+  fetchedAt: string;
+  /** Noch im Zwischenspeicher: erneutes Öffnen kostet nichts. */
+  fresh: boolean;
+  result: TrendResult;
+};
+
+/** Die letzten gespeicherten Kurven (ohne neue Kosten), je Abfrage nur die neueste. */
+export async function getRecentTrends(supabase: SupabaseClient, limit = 8): Promise<RecentTrend[]> {
+  const { data, error } = await supabase
+    .from("trend_series")
+    .select("keywords, geo, time_range, payload, fetched_at")
+    .eq("source_id", TRENDS_SOURCE_ID)
+    .not("time_range", "like", `${INSIGHTS_PREFIX}%`)
+    .order("fetched_at", { ascending: false })
+    .limit(limit * 4);
+  if (error || !data) return [];
+  const seen = new Set<string>();
+  const freshSince = Date.now() - CACHE_HOURS * 3600_000;
+  const out: RecentTrend[] = [];
+  for (const row of data) {
+    const key = `${(row.keywords as string[]).join(",")}|${row.geo}|${row.time_range}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      keywords: row.keywords as string[],
+      geo: row.geo,
+      timeRange: row.time_range,
+      fetchedAt: row.fetched_at,
+      fresh: new Date(row.fetched_at).getTime() >= freshSince,
+      result: row.payload as TrendResult,
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
