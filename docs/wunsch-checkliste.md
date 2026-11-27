@@ -20,6 +20,43 @@ Zeichen: ✅ erledigt · 🟡 teilweise · ❌ fehlt · ⛔ nicht machbar (Grund
 - Anthropic-Key (KI-Einstufung, Top-Hits-Begründung, später Analyse)
 - AliExpress: App auf openservice.aliexpress.com freigeben lassen, dann 3 Schlüssel in Vercel
 
+## Automatische Recherche (Wunsch 27.11.2026: „Die Website soll selbst recherchieren“)
+Thread „Recherche automatisch und verknüpft machen“. Ziel: morgens neue Produkte, Shops, Brands und Trends sehen, ohne selbst zu suchen.
+
+Gemeinsame Basis und Automatik
+- 🟡 Gemeinsame Themen-Basis (`topics`) mit täglichen Messpunkten (`topic_metrics`), automatisch aus CJ-Produkten (PR 1, Migration 0009). Weitere Quellen (Google Trends, Pinterest) folgen
+- 🟡 Automatische Anzeigen-Stichwörter aus den Themen (statt selbst eintragen), höchstens 6 pro Tag und 20 gleichzeitig (PR 1)
+- ✅ Duplikaterkennung über normalisierten Namen (Themen) und Seiten-ID (Shops)
+- ✅ Übersicht „Datenquellen“: welche Quelle läuft, zuletzt erfolgreich, letzter Fehler, ob der tägliche Lauf eingerichtet ist (PR 1, Seite Datensammler)
+- ❌ Bereiche verknüpfen: gleiches Produkt/Shop in mehreren Bereichen zusammenführen und gegenseitig verlinken (PR 3)
+
+Shop Spy
+- ✅ „Shop verfolgen“ bleibt, täglich ein Messpunkt
+- 🟡 Shops automatisch aus den gesammelten Anzeigen finden (≥ 5 aktive Anzeigen in 3 Tagen, eigene Shop-Domain), täglich zählen, ohne Anzeigen pausieren (PR 1). Braucht Meta-Token
+- 🟡 Rangliste: meiste aktive Anzeigen, stärkster Anstieg, längste Laufzeit, neu entdeckt (PR 1, als Schnellfilter)
+- ✅ Klick auf Shop zeigt Anzeigen, Verlauf, verknüpfte Produkte; neu: Entdeckungsgrund und älteste bekannte Anzeige
+- 🟡 Logo: nur Kürzel (Meta liefert kein Seitenbild in der Ad Library API)
+- 🟡 Bestseller: nur häufigste Anzeigentitel; echte Verkäufe gibt keine Quelle heraus
+- ❌ Produktkategorie pro Shop
+
+Trend Spy
+- ❌ Trend-Datenbank, die sich selbst füllt, mit Bild, Kategorie, Popularität, Veränderung, Suchnachfrage, Werbeaktivität (PR 2)
+- ❌ Trenddiagramme 7 / 30 / 90 Tage und 12 Monate (PR 2, Google Trends über DataForSEO plus eigene Messpunkte)
+- ❌ Filter „gerade viral“, „stark steigend“, „neu“, „langfristig beliebt“, „absteigend“ (PR 2)
+- ⛔ TikTok viral, TikTok-Videos: keine erlaubte Schnittstelle (Creative Center ohne API, Abgreifen laut TikTok verboten). Ersatz: Google-Trends-Kurve für YouTube-Suchen, Pinterest-Trends (Zugang noch prüfen)
+
+Future Radar
+- ❌ Produkte mit Zukunftspotenzial automatisch finden, wenn mehrere Quellen gleichzeitig steigen (PR 3)
+- ❌ Pro Produkt: Bild, Kategorie/Nische, Nachfrage und Entwicklung, Konkurrenz, Werbeaktivität, Zielgruppe, Dropshipping-Potenzial, Quellen, Datum (PR 3; Zielgruppe und „warum“ nur mit KI, PR 4)
+- ✅ Eigene Themen beobachten bleibt als Zusatz
+
+Startup Spy
+- 🟡 Automatisch: neue Werbetreibende aus Meta, Product Hunt, RSS (gebaut, leer ohne Meta-Token und Stichwörter; die automatischen Stichwörter aus PR 1 füllen ihn)
+- ❌ Pro Brand: Sortiment, Anzahl aktiver Anzeigen, erste Marketingaktivität, „warum interessant“, „was besser als Konkurrenz“ (PR 3, Texte mit KI in PR 4)
+
+Kosten (Entscheidung von Niklas offen, Karte im Thread)
+- ❌ DataForSEO nach dem Gratisguthaben, Haiku-Einschätzungen, optional KI-Websuche
+
 ## Grundlagen
 - ✅ Private Website online, Login nur für Niklas, keine Registrierung, keine Zahlungen
 - ✅ API-Schlüssel nur auf dem Server

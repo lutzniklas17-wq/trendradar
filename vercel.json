@@ -6,6 +6,10 @@
       "schedule": "30 2 * * *"
     },
     {
+      "path": "/api/cron/collect?job=topics",
+      "schedule": "50 2 * * *"
+    },
+    {
       "path": "/api/cron/collect?job=ads",
       "schedule": "0 3 * * *"
     },

@@ -77,6 +77,20 @@ describe("filterShops", () => {
     shop({ name: "Gamma", hasError: true }),
   ];
 
+  it("trennt automatische, eigene und pausierte Shops", () => {
+    const list = [
+      shop({ name: "Auto", origin: "auto", activeAds: 5, longestDays: 90, createdAt: "2026-11-27T00:00:00Z" }),
+      shop({ name: "Eigen", activeAds: 3, longestDays: 10, createdAt: "2026-11-01T00:00:00Z" }),
+      shop({ name: "Ruht", origin: "auto", paused: true, activeAds: 0 }),
+    ];
+    expect(filterShops(list, parseShopFilters({})).map((s) => s.name)).toEqual(["Auto", "Eigen"]);
+    expect(filterShops(list, parseShopFilters({ signal: "auto" })).map((s) => s.name)).toEqual(["Auto"]);
+    expect(filterShops(list, parseShopFilters({ signal: "eigene" })).map((s) => s.name)).toEqual(["Eigen"]);
+    expect(filterShops(list, parseShopFilters({ signal: "pausiert" })).map((s) => s.name)).toEqual(["Ruht"]);
+    expect(filterShops(list, parseShopFilters({ sortierung: "laufzeit" })).map((s) => s.name)).toEqual(["Auto", "Eigen"]);
+    expect(filterShops(list, parseShopFilters({ sortierung: "entdeckt" })).map((s) => s.name)).toEqual(["Auto", "Eigen"]);
+  });
+
   it("sortiert nach meisten Anzeigen, ungezählte zuletzt", () => {
     expect(filterShops(shops, parseShopFilters({})).map((s) => s.name)).toEqual(["Beta", "Alpha", "Gamma"]);
   });

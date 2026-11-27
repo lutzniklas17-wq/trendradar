@@ -20,10 +20,12 @@ import { saveProducts, searchAliExpress, searchCj } from "@/lib/library/service"
 import { AE_SORT } from "@/lib/library/aliexpress";
 import { SupplierError, type LibraryPlatform } from "@/lib/library/sources";
 import { runProductReview } from "@/lib/ai/review";
+import { recordTopicAdMetrics, runTopicDiscovery, TOPICS_SOURCE_ID } from "@/lib/topics/service";
+import { discoverShops, SHOP_DISCOVERY_SOURCE_ID } from "@/lib/shops/service";
 
 type FetchFn = typeof fetch;
 
-export const JOBS = ["ads", "startups", "producthunt", "rss", "news", "library", "ai"] as const;
+export const JOBS = ["ads", "startups", "producthunt", "rss", "news", "library", "ai", "topics", "shopfinder"] as const;
 export type Job = (typeof JOBS)[number];
 export const isJob = (v: unknown): v is Job => typeof v === "string" && (JOBS as readonly string[]).includes(v);
 
@@ -202,6 +204,8 @@ export async function runAdSweep(
   };
   await logRun(supabase, started, r);
   await addInboxEntry(supabase, "ads", "Anzeigen-Sammellauf", changes);
+  // Messpunkte der Themen mit den frischen Anzeigen aktualisieren (nur Datenbank, ohne Migration 0009 wirkungslos).
+  await recordTopicAdMetrics(supabase, now);
   return r;
 }
 
@@ -458,6 +462,67 @@ export async function runAi(supabase: SupabaseClient): Promise<JobResult> {
   return r;
 }
 
+/**
+ * Täglicher Themen-Lauf (nach der Bibliothek, vor den Anzeigen): leitet Themen aus den CJ-Produkten ab
+ * und legt für die stärksten automatisch Anzeigen-Stichwörter an. Kostet keine API-Abfrage.
+ */
+export async function runTopics(supabase: SupabaseClient, { now = new Date() }: { now?: Date } = {}): Promise<JobResult> {
+  const started = new Date();
+  const res = await runTopicDiscovery(supabase, now);
+  if ("error" in res) {
+    await markSource(supabase, TOPICS_SOURCE_ID, res.error);
+    const r: JobResult = { job: "topics", status: "failed", message: res.error, newItems: 0 };
+    await logRun(supabase, started, r);
+    return r;
+  }
+  if (!res.products) {
+    const r: JobResult = {
+      job: "topics",
+      status: "skipped",
+      message: "Keine Produkte aus den letzten 3 Tagen in der Bibliothek. Zuerst muss die Produkt-Bibliothek (CJ) laufen.",
+      newItems: 0,
+    };
+    await markSource(supabase, TOPICS_SOURCE_ID, r.message);
+    await logRun(supabase, started, r);
+    return r;
+  }
+  await markSource(supabase, TOPICS_SOURCE_ID, null);
+  const r: JobResult = {
+    job: "topics",
+    status: "success",
+    message:
+      `${res.products} Produkte ausgewertet, ${res.candidates} Themen erkannt, ${res.created.length} neu, ${res.updated} bestätigt` +
+      (res.newTerms.length ? `, neue Anzeigen-Stichwörter: ${res.newTerms.join(", ")}` : "") +
+      (res.paused ? `, ${res.paused} veraltete Themen pausiert` : "") +
+      ".",
+    newItems: res.created.length,
+    details: res,
+  };
+  await logRun(supabase, started, r);
+  await addInboxEntry(
+    supabase,
+    "topics",
+    "Neue Themen aus den Produktdaten",
+    res.created.map((t) => ({ kind: "added" as const, label: t.name, href: "/sammler#themen" })),
+  );
+  return r;
+}
+
+/** Shop-Entdeckung allein (die tägliche Shop-Zählung ruft sie ebenfalls auf). */
+export async function runShopFinder(supabase: SupabaseClient, { now = new Date() }: { now?: Date } = {}): Promise<JobResult> {
+  const started = new Date();
+  const res = await discoverShops(supabase, now);
+  if (res.error) await markSource(supabase, SHOP_DISCOVERY_SOURCE_ID, res.error);
+  const r: JobResult = {
+    job: "shopfinder",
+    status: res.error ? "failed" : "success",
+    message: res.error ?? `${res.added.length} Shops automatisch entdeckt, ${res.paused} ohne Anzeigen pausiert.`,
+    newItems: res.added.length,
+  };
+  await logRun(supabase, started, r);
+  return r;
+}
+
 export function runJob(supabase: SupabaseClient, job: Job, opts: { fetchImpl?: FetchFn; max?: number } = {}) {
   if (job === "ads") return runAdSweep(supabase, opts);
   if (job === "startups") return runStartups(supabase);
@@ -465,5 +530,7 @@ export function runJob(supabase: SupabaseClient, job: Job, opts: { fetchImpl?: F
   if (job === "news") return runNews(supabase, opts);
   if (job === "library") return runLibrary(supabase, opts);
   if (job === "ai") return runAi(supabase);
+  if (job === "topics") return runTopics(supabase);
+  if (job === "shopfinder") return runShopFinder(supabase);
   return runFeeds(supabase, opts);
 }

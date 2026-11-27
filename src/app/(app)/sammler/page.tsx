@@ -7,7 +7,11 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { inputClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireOwner } from "@/lib/auth";
-import { getAliExpressEnv, getAnthropicEnv, getCjEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { getAliExpressEnv, getAnthropicEnv, getCjEnv, getCronEnv, getDataForSeoEnv, getMetaEnv, getProductHuntEnv } from "@/lib/env";
+import { SourceStatus } from "@/components/collect/source-status";
+import type { SourceRow } from "@/lib/collect/source-status";
+import { AUTO_TERMS_MAX } from "@/lib/topics/plan";
+import { AUTO_SHOPS_MAX } from "@/lib/shops/discover";
 import { AD_COUNTRIES } from "@/lib/ads/meta";
 import { addFeed, addWatchTerm, removeFeed, removeWatchTerm, runCollectorNow, toggleWatchTerm } from "./actions";
 
@@ -19,10 +23,11 @@ const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("de-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" }) : "noch nie";
 
 const AREA_LABEL: Record<string, string> = { trend_spy: "Trend Spy", startup_spy: "Startup Spy", future_radar: "Future Radar" };
-const JOB_LABEL: Record<string, string> = { ads: "Anzeigen", producthunt: "Product Hunt", rss: "RSS-Feeds", shops: "Shops", library: "Produkt-Bibliothek", ai: "KI-Bewertung", startups: "Startups", news: "News" };
+const JOB_LABEL: Record<string, string> = { ads: "Anzeigen", producthunt: "Product Hunt", rss: "RSS-Feeds", shops: "Shops", library: "Produkt-Bibliothek", ai: "KI-Bewertung", startups: "Startups", news: "News", topics: "Automatische Themen", shopfinder: "Shop-Entdeckung" };
 
-type Term = { id: string; term: string; country: string; active: boolean; last_run_at: string | null; last_count: number | null; last_error: string | null; items: { name: string } | null };
+type Term = { id: string; term: string; country: string; active: boolean; origin?: string; last_run_at: string | null; last_count: number | null; last_error: string | null; items: { name: string } | null };
 type Feed = { id: string; url: string; name: string; area: string; keywords: string[]; last_run_at: string | null; last_count: number | null; last_error: string | null };
+type Topic = { id: string; name: string; kind: string; origin: string; status: string; reason: string | null; first_seen_at: string; last_seen_at: string };
 type Run = { id: string; job: string | null; started_at: string; status: string; new_items: number; log: { message?: string } | null };
 
 function RunButton({ job, disabled, label, reason }: { job: string; disabled?: boolean; label: string; reason?: string }) {
@@ -46,11 +51,20 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
   const ae = getAliExpressEnv() !== null;
   const ai = getAnthropicEnv() !== null;
 
-  const [termsRes, feedsRes, runsRes] = await Promise.all([
-    supabase.from("ad_watch_terms").select("id, term, country, active, last_run_at, last_count, last_error, items(name)").order("term"),
+  const [termsRes, feedsRes, runsRes, sourcesRes, topicsRes, autoShopsRes] = await Promise.all([
+    supabase.from("ad_watch_terms").select("*, items(name)").order("term"),
     supabase.from("feeds").select("id, url, name, area, keywords, last_run_at, last_count, last_error").order("name"),
     supabase.from("research_runs").select("id, job, started_at, status, new_items, log").order("started_at", { ascending: false }).limit(15),
+    supabase.from("sources").select("id, name, last_success_at, last_error_at, last_error"),
+    supabase.from("topics").select("id, name, kind, origin, status, reason, first_seen_at, last_seen_at").order("last_seen_at", { ascending: false }).limit(40),
+    supabase.from("tracked_shops").select("id", { count: "exact", head: true }).eq("origin", "auto").eq("active", true),
   ]);
+  const sources = (sourcesRes.data ?? []) as SourceRow[];
+  const topics = (topicsRes.data ?? []) as Topic[];
+  const topicsMissing = Boolean(topicsRes.error);
+  const autoShops = autoShopsRes.count ?? 0;
+  const dfs = getDataForSeoEnv() !== null;
+  const cronReady = getCronEnv() !== null;
   const terms = (termsRes.data ?? []) as unknown as Term[];
   const feeds = (feedsRes.data ?? []) as Feed[];
   const runs = (runsRes.data ?? []) as Run[];
@@ -75,6 +89,67 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
       ) : null}
 
       <div className="space-y-6">
+        <SourceStatus
+          rows={sources}
+          cronReady={cronReady}
+          configured={{
+            cj_dropshipping: cj,
+            auto_topics: cj,
+            meta_ad_library: meta,
+            shop_discovery: meta,
+            meta_new_advertisers: meta,
+            dataforseo_trends: dfs,
+            product_hunt: ph,
+            rss: feeds.length > 0,
+            aliexpress: ae,
+            anthropic: ai,
+          }}
+        />
+
+        <Card id="themen">
+          <CardHeader
+            title="Automatische Themen"
+            description={`Jeden Tag um ca. 03:50, nach der Produkt-Bibliothek: Wortgruppen und Kategorien, die in mindestens 3 verschiedenen CJ-Produkten vorkommen, werden zu Themen mit täglichem Messpunkt. Die stärksten neuen Produkt-Themen bekommen automatisch ein Anzeigen-Stichwort (höchstens 6 pro Tag und ${AUTO_TERMS_MAX} gleichzeitig, Land Irland, weil die CJ-Titel englisch sind). Themen, die 21 Tage nicht mehr auftauchen, ruhen. Kostet keine Abfrage.`}
+            action={<RunButton job="topics" disabled={!cj || topicsMissing} label="Jetzt auswerten" reason={topicsMissing ? "Migration 0009 fehlt" : "CJ_API_KEY fehlt"} />}
+          />
+          {topicsMissing ? (
+            <p className="border-t border-border px-5 py-3 text-[13px] text-warning">Die Tabelle fehlt noch. Bitte die Migration 0009_auto_research.sql in Supabase ausführen.</p>
+          ) : topics.length ? (
+            <ul className="divide-y divide-border border-t border-border">
+              {topics.map((t) => (
+                <li key={t.id} className="px-5 py-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{t.name}</span>
+                    <Badge>{t.kind === "niche" ? "Nische" : "Produkt"}</Badge>
+                    {t.origin === "auto" ? <Badge tone="accent">automatisch</Badge> : null}
+                    {t.status === "paused" ? <Badge tone="warning">ruht</Badge> : null}
+                  </div>
+                  {t.reason ? <p className="mt-1 text-[13px] text-muted">{t.reason}</p> : null}
+                  <p className="mt-0.5 text-[13px] text-muted">
+                    Entdeckt: {when(t.first_seen_at)} · zuletzt bestätigt: {when(t.last_seen_at)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState icon={Tag} title="Noch keine Themen">
+              Sobald die Produkt-Bibliothek gelaufen ist, entstehen hier die ersten Themen.
+            </EmptyState>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Shop-Entdeckung (aus gesammelten Anzeigen)"
+            description={`Jeden Tag um ca. 06:00, vor der Shop-Zählung: Werbetreibende mit mindestens 5 verschiedenen Anzeigen, die in den letzten 3 Tagen aktiv gesehen wurden, und mit eigener Shop-Domain kommen automatisch in den Shop Spy (höchstens 8 pro Tag und ${AUTO_SHOPS_MAX} gleichzeitig). Ab dann entsteht jeden Tag ein Messpunkt. Shops, die dreimal hintereinander keine aktiven Anzeigen haben, werden pausiert (Favoriten nie). Kostet keine Abfrage.`}
+            action={<RunButton job="shopfinder" disabled={topicsMissing} label="Jetzt suchen" reason="Migration 0009 fehlt" />}
+          />
+          <p className="border-t border-border px-5 py-3 text-[13px] text-muted">
+            {autoShops} automatisch entdeckte Shops werden gerade täglich gezählt.
+            {!meta ? " Ohne META_ACCESS_TOKEN gibt es keine gesammelten Anzeigen und damit auch keine neuen Shops." : ""}
+          </p>
+        </Card>
+
         <Card>
           <CardHeader
             title="Anzeigen-Stichwörter (Meta Ad Library)"
@@ -106,6 +181,7 @@ export default async function SammlerPage({ searchParams }: PageProps<"/sammler"
                   <div>
                     <span className="font-medium">{t.term}</span> <Badge>{t.country}</Badge>
                     {t.items ? <Badge tone="accent" className="ml-1">Produkt: {t.items.name}</Badge> : null}
+                    {t.origin === "auto" ? <Badge tone="accent" className="ml-1">automatisch</Badge> : null}
                     {!t.active ? <Badge tone="warning" className="ml-1">pausiert</Badge> : null}
                     <p className="mt-1 text-xs text-muted">
                       Zuletzt: {when(t.last_run_at)}

@@ -24,8 +24,15 @@ export async function trackShop(form: FormData) {
   if (!parsed.ok) return backWithError(parsed.error);
   const name = field(form, "name", 200) || `Seite ${parsed.pageId}`;
 
-  const { data: existing } = await supabase.from("tracked_shops").select("id").eq("platform", "meta").eq("page_id", parsed.pageId).maybeSingle();
-  if (existing) redirect(`/shop-spy/${existing.id}`);
+  const { data: existing } = await supabase.from("tracked_shops").select("*").eq("platform", "meta").eq("page_id", parsed.pageId).maybeSingle();
+  if (existing) {
+    // Automatisch entdeckter Shop: wird jetzt zu einem selbst verfolgten und nie automatisch pausiert.
+    if ((existing as { origin?: string }).origin === "auto") {
+      await supabase.from("tracked_shops").update({ origin: "manual", active: true }).eq("id", existing.id);
+      revalidatePath("/shop-spy");
+    }
+    redirect(`/shop-spy/${existing.id}`);
+  }
 
   const { data: shop, error } = await supabase
     .from("tracked_shops")
@@ -75,7 +82,10 @@ export async function toggleFavoriteShop(form: FormData) {
   const { supabase } = await requireOwner();
   const id = field(form, "id", 40);
   if (!UUID.test(id)) return backWithError("Ungültiger Shop.");
-  const { error } = await supabase.from("tracked_shops").update({ favorite: field(form, "favorit", 1) === "1" }).eq("id", id);
+  const favorite = field(form, "favorit", 1) === "1";
+  const { error } = await supabase.from("tracked_shops").update({ favorite }).eq("id", id);
+  // Ein pausierter, automatisch entdeckter Shop wird als Favorit wieder täglich gezählt (ab Migration 0009).
+  if (!error && favorite) await supabase.from("tracked_shops").update({ active: true }).eq("id", id);
   if (error) return backWithError("Favorit konnte nicht gespeichert werden. Ist die Migration 0006 in Supabase gelaufen?");
   revalidatePath("/shop-spy");
   revalidatePath(`/shop-spy/${id}`);

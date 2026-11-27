@@ -92,11 +92,12 @@ jeder Eintrag speichert Originalquelle und Entdeckungsdatum, Duplikate (gleiche 
 
 | Bot | Quelle | Zeit (UTC) | Wohin |
 | --- | --- | --- | --- |
+| Automatische Themen | eigene Datenbank: Wortgruppen und Kategorien aus den CJ-Produkten, erzeugt Anzeigen-Stichwörter | 02:50 | Datensammler, später Trend Spy und Future Radar |
 | Anzeigen-Stichwörter | Meta Ad Library API, bis 300 aktive Anzeigen pro Stichwort und Land | 03:00 | Ad Spy, Rangliste |
 | Product Hunt | Product Hunt API v2, Launches der letzten 36 h mit Konsum-Themen | 04:00 | Startup Spy |
 | RSS-Feeds | eigene Liste von RSS/Atom-Feeds, optional mit Stichwortfilter | 04:30 | Trend Spy, Startup Spy oder Future Radar |
 | News | eigene News-Feeds (RSS/Atom, z. B. Google-News-Suchen) | 04:45 | Daily News |
-| Shops | Meta Ad Library API | 05:00 | Shop Spy |
+| Shops | zuerst automatische Shop-Entdeckung aus den gesammelten Anzeigen (eigene Datenbank), dann Zählung über die Meta Ad Library API | 05:00 | Shop Spy |
 
 Bewusst **nicht** dabei (Stand 26.11.2026): Reddit (neue API-Zugänge brauchen Freigabe durch Reddit), Kickstarter/Indiegogo, TikTok Creative Center,
 Amazon (Nutzungsbedingungen verbieten automatisches Auslesen, nur Links), Shopify `/products.json` (keine offizielle API, Shopify will den Zugang einschränken).
@@ -107,7 +108,8 @@ Einrichtung:
 3. Optional Product Hunt: auf https://www.producthunt.com/v2/oauth/applications eine Anwendung anlegen (Redirect-URI z. B. `https://localhost`),
    dort den **Developer Token** kopieren und in Vercel als `PRODUCTHUNT_TOKEN` eintragen. Kostenlos, laut Product Hunt nur für nicht kommerzielle Nutzung.
 4. Migrationen `0005_ad_rankings.sql` und `0006_news_inbox.sql` ausführen (Rangliste, News, Inbox, Shop-Favoriten).
-5. Neu deployen. Unter Vercel → Settings → Cron Jobs erscheinen fünf tägliche Läufe.
+5. Neu deployen. Unter Vercel → Settings → Cron Jobs erscheinen die täglichen Läufe.
+6. Migration `0009_auto_research.sql` ausführen (automatische Themen, automatische Shops, Datenquellen-Status).
 
 **Daily News:** Kacheln mit Bild, Titel und Anrisstext aus dem Feed; Klick zeigt den Auszug und den Link zum Originalartikel.
 Volltexte werden nicht kopiert (Urheberrecht), Bilder werden direkt vom Verlag geladen. Google-News-Feeds liefern meist keine Bilder.

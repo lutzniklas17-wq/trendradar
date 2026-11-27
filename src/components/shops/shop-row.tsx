@@ -19,6 +19,12 @@ export type ShopRowData = {
   newAds: number | null;
   /** Aktive Anzeigen pro Tag, älteste zuerst. */
   series: number[];
+  /** 'auto' = vom System entdeckt. */
+  origin?: string | null;
+  /** Fakt: warum der Shop automatisch aufgenommen wurde. */
+  reason?: string | null;
+  /** Längste Laufzeit einer aktiven Anzeige in Tagen. */
+  longestDays?: number | null;
 };
 
 /** Shop als Zeile: Name und Domain, Verlauf der aktiven Anzeigen, Kennzahlen. */
@@ -43,6 +49,11 @@ export function ShopRow({ shop: s }: { shop: ShopRowData }) {
             ) : t?.dropping ? (
               <Badge tone="warning" title="Mindestens halbiert gegenüber vor 7 Tagen">
                 <TrendingDown className="size-3" aria-hidden /> stark rückläufig
+              </Badge>
+            ) : null}
+            {s.origin === "auto" ? (
+              <Badge tone="neutral" title={s.reason ?? "Automatisch aus den gesammelten Anzeigen entdeckt"}>
+                automatisch entdeckt
               </Badge>
             ) : null}
           </div>
@@ -75,6 +86,7 @@ export function ShopRow({ shop: s }: { shop: ShopRowData }) {
           tone={t?.delta ? (t.delta > 0 ? "text-positive" : "text-negative") : undefined}
         />
         <Stat label="neu 7 T" value={s.newAds !== null ? String(s.newAds) : "–"} />
+        <Stat label="längste" value={s.longestDays !== null && s.longestDays !== undefined ? `${s.longestDays} T` : "–"} />
         <Link href={`/shop-spy/${s.id}`} className={buttonClass("secondary", "sm", "hidden md:inline-flex")}>
           Öffnen
         </Link>
