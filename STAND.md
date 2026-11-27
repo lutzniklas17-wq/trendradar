@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 26.11.2026 (Minea-Layout Teil 3: Produkte-Suche mit Herkunft, Filterpanel)_
+_Zuletzt aktualisiert: 27.11.2026 (Abgleich aller Nutzerwünsche mit dem Code, siehe Wunsch-Checkliste)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -83,6 +83,20 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - Aufteilung mit Layout-Thread: Daten/Logik hier, Darstellung (product-row, product-card, filter-bar, Markup von `/produkte`) dort.
 - Weitere Quellen geprüft 26.11.2026: eBay Browse API (kostenlos, offiziell) wäre als Verkaufspreis-Vergleich möglich, nicht als Lieferant. Spocket, Zendrop, AutoDS: keine öffentliche Produkt-API. Temu, Alibaba, DHgate: keine offene Such-API, bleiben Links.
 
+## Wunsch-Checkliste (Abgleich 27.11.2026)
+Vollständige Liste aller Wünsche von Niklas mit Status: `docs/wunsch-checkliste.md`. **Jeder Thread trägt neue Wünsche dort ein und prüft die Liste vor „fertig“.**
+
+Offen (❌ fehlt, 🟡 teilweise), Reihenfolge = Empfehlung:
+1. ❌ KI-Analyse und Bewertung auf der Produkt-Detailseite (`analysis-section.tsx`/`rating-section.tsx` lesen `assessments`, nichts schreibt hinein).
+2. ❌ Kategorie-Filter und „steigend/fallend“ auf `/produkte` (`supplier_products.category` existiert, `LibraryFilters` hat kein Feld); ❌ Land-Filter im Trend Spy.
+3. 🟡 Globale Suche `/suche` sucht nur `items` per `find_similar_items`; Bibliothek, Anzeigen, Shops, News, Google Trends fehlen.
+4. ❌ Google Trends nur `google_trends_graph`; verwandte/steigende Begriffe und Regionen fehlen; kein automatischer Lauf für „stark steigende Suchanfragen“.
+5. ❌ Produkte vergleichen (auch Merkliste).
+6. 🟡 Future Radar nur mit eigenen Themen und Regeln; automatische Themen und KI-Einschätzung fehlen.
+7. ❌ Produkt-Detailseite und Rechner im Minea-Stil; ❌ KI-Kurzfassung News; ❌ SHAB-Neueintragungen; 🟡 Lieferdaten pro Plattform (Versand, Lieferzeit, MOQ) nur manuell.
+- Nicht machbar (mit Grund in der Liste): TikTok-Anzeigen, Kickstarter/Indiegogo, Alibaba/DHgate/Temu/Spocket-APIs, echte Verkaufszahlen, CTA/Ausgaben/Umsatz aus Meta, ganzer AliExpress-Katalog, Minea-Code kopieren.
+- Ehrlich festgehalten: „Suche über AliExpress und andere“ war ab 26.11. 13:40 gewünscht; PR #10 baute nur CJ ohne Herkunft, Herkunft + Plattform-Filter kamen erst mit PR #15/#16.
+
 ## Verbindliche Anforderungen (Nutzer, 26.11.2026)
 - **Strikt E-Commerce.** Alles (Trend, Startup, Future Radar, Produkte) muss für Online-Shops/Dropshipping relevant sein. Branchen wie Öl, Industrie, B2B-Software, Finanzen herausfiltern.
 - **Startup Spy:** nur kleine, gerade gestartete E-Commerce-/D2C-Marken. Filter „Startup / Small Business / gerade gestartet“ (z. B. Gründungs- oder Launch-Datum, Grösse); keine Grosskonzerne.
@@ -112,4 +126,4 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
 - Konten mit Kosten erst nach Zustimmung: Anthropic API, CJdropshipping. Meta-API ist kostenlos.
 
 ## Nächster Schritt
-PR #11 mergen, dann PR #10 (nach Migration 0008), dann mit echtem CJ-Key prüfen. `/produkte` ist auf Zeilen und Filterpanel umgestellt (Teil 3); im Browser mit echten Daten prüfen. KI auch für unklare Startup-Relevanz und Future-Radar; Meta-Vorschau mit echtem Token prüfen; optional SHAB-Neueintragungen.
+PRs #10–#16 sind gemergt. Als Nächstes Punkte 1–6 der Wunsch-Checkliste (oben), erst nach Freigabe durch Niklas. Parallel mit echten Schlüsseln prüfen: CJ (läuft), AliExpress (wartet auf App-Freigabe), Meta-Vorschau, DataForSEO, Anthropic.
