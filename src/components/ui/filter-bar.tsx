@@ -143,7 +143,7 @@ function Control({ control: c, onChange, showLabel = false }: { control: FilterC
   return (
     <label
       className={cn(
-        "flex h-8 cursor-pointer items-center gap-2 rounded-md border px-2.5 text-[13px] shadow-xs transition-colors select-none",
+        "flex h-8 cursor-pointer items-center gap-2 rounded-md border px-2.5 text-[13px] shadow-card transition-colors select-none",
         c.checked ? "border-accent/30 bg-accent-soft text-accent" : "border-border bg-surface text-muted hover:border-border-strong",
       )}
     >

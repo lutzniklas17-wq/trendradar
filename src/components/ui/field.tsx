@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 /** Einheitlicher Stil für Eingabefelder und Auswahllisten. */
 export const inputClass =
-  "h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors duration-150 placeholder:text-subtle hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15";
+  "h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-foreground shadow-card outline-none transition-colors duration-150 placeholder:text-subtle hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15";
 
 export function Field({
   label,

@@ -94,7 +94,7 @@ export function ProductRow({
   return (
     <article
       className={cn(
-        "grid overflow-hidden rounded-xl border border-border bg-surface shadow-xs transition-colors duration-150 hover:border-border-strong",
+        "group grid overflow-hidden rounded-xl border border-border bg-surface shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover",
         "grid-cols-[112px_minmax(0,1fr)] sm:grid-cols-[208px_minmax(0,1fr)]",
         showAds ? "xl:grid-cols-[208px_minmax(0,1fr)_240px_280px]" : "xl:grid-cols-[208px_minmax(0,1fr)_260px]",
         muted && "opacity-60",
@@ -104,14 +104,14 @@ export function ProductRow({
       <div className="relative min-h-28 bg-surface-muted sm:min-h-52">
         {p.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.image_url} alt={p.title} loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 size-full object-cover" />
+          <img src={p.image_url} alt={p.title} loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-subtle" aria-hidden>
             <Package className="size-7" strokeWidth={1.5} />
           </div>
         )}
         {rank ? (
-          <span className="absolute top-2.5 left-2.5 inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-surface/95 px-1.5 text-[12px] font-semibold tabular-nums shadow-xs">
+          <span className="absolute top-2.5 left-2.5 inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-surface/95 px-1.5 text-[12px] font-semibold tabular-nums shadow-card">
             {rank}
           </span>
         ) : null}

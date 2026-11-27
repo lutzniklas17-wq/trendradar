@@ -147,6 +147,7 @@ Kosten (Entscheidung von Niklas offen, Karte im Thread)
 - ✅ Ruhig und clean, kein Neon, eine Farbe (Indigo), Aufbau wie Minea (Startseite, Anzeigen, Shops, Produkte)
 - ✅ Filter auf den Listen, hell/dunkel, Handy
 - 🟡 Die meisten Seiten noch nicht mit echten Daten im Browser angeschaut
+- 🟡 Ganze Website gestalterisch überarbeiten nach Minea (Wunsch 27.11.): einheitliches Designsystem, Hover-Effekte und dezente Animationen, Navigation wie Minea, Kennzahlen bei Future Radar/Startup/Shop/Trend/Ad Spy sofort sichtbar. Teil 1 (Designsystem + Navigation mit Schnellsuche ⌘K) im PR; Seiten folgen in eigenen PRs
 - ⛔ Minea-Code oder -Bilder kopieren: fremdes geschütztes Werk; nachgebaut nach Screenshots
 
 ## Kosten

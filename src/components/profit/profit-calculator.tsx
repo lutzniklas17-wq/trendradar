@@ -110,7 +110,7 @@ function NumberInput({
           setText(e.target.value);
           onChange(parse(e.target.value));
         }}
-        className="h-9 w-full rounded-md border border-border bg-surface pr-12 pl-3 text-right text-sm tabular-nums shadow-xs outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
+        className="h-9 w-full rounded-md border border-border bg-surface pr-12 pl-3 text-right text-sm tabular-nums shadow-card outline-none transition-colors hover:border-border-strong focus:border-accent focus:ring-2 focus:ring-accent/15"
       />
       <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted">
         {unit === "percent" ? "%" : currency}
@@ -216,7 +216,7 @@ export function ProfitCalculator({
                   setCurrency(e.target.value);
                   setSaveState({ status: "idle" });
                 }}
-                className="h-8 rounded-md border border-border bg-surface px-2 text-sm text-foreground shadow-xs outline-none hover:border-border-strong focus:border-accent"
+                className="h-8 rounded-md border border-border bg-surface px-2 text-sm text-foreground shadow-card outline-none hover:border-border-strong focus:border-accent"
               >
                 {["CHF", "EUR", "USD"].map((c) => (
                   <option key={c}>{c}</option>

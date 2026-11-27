@@ -1,7 +1,20 @@
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-lg border border-border bg-surface shadow-xs", className)} {...props} />;
+/**
+ * Gemeinsame Kartenklassen. `interactive` für klickbare Karten (Link, ganze Karte):
+ * Rahmen und Schatten heben sich beim Darüberfahren dezent ab.
+ */
+export function cardClass(interactive = false, className?: string) {
+  return cn(
+    "rounded-lg border border-border bg-surface shadow-card",
+    interactive &&
+      "transition-[border-color,box-shadow,background-color] duration-150 hover:border-border-strong hover:shadow-card-hover",
+    className,
+  );
+}
+
+export function Card({ className, interactive, ...props }: React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean }) {
+  return <div className={cardClass(interactive, className)} {...props} />;
 }
 
 export function CardHeader({

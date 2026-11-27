@@ -64,7 +64,7 @@ export function FilterPanel({ groups, resetHref, active }: { groups: PanelGroup[
   }, []);
 
   return (
-    <div ref={ref} className="rounded-xl border border-border bg-surface shadow-xs">
+    <div ref={ref} className="rounded-xl border border-border bg-surface shadow-card">
       <details open className="group/panel">
         <summary className="flex h-11 cursor-pointer list-none items-center gap-2 px-4 text-[12px] font-medium tracking-wider text-muted uppercase select-none [&::-webkit-details-marker]:hidden">
           <Filter className="size-3.5" aria-hidden />
@@ -130,7 +130,7 @@ function Item({ item }: { item: PanelItem }) {
         <span className={cn(selected && "font-medium")}>{item.label}</span>
         {selected ? <span className="ml-auto truncate text-[12px]">{selected.label}</span> : null}
       </summary>
-      <ul className="absolute top-9 left-0 z-20 min-w-56 rounded-lg border border-border bg-surface p-1 shadow-md" role="listbox" aria-label={item.label}>
+      <ul className="absolute top-9 left-0 z-20 min-w-56 animate-pop-in rounded-lg border border-border bg-surface p-1 shadow-popover" role="listbox" aria-label={item.label}>
         {item.options.map((o) => (
           <li key={o.label}>
             <Link

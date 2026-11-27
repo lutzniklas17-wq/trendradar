@@ -1,6 +1,6 @@
 # Stand TrendRadar
 
-_Zuletzt aktualisiert: 27.11.2026 (Thread „Recherche automatisch und verknüpft machen“, PR 1)_
+_Zuletzt aktualisiert: 27.11.2026 (Thread „Recherche automatisch und verknüpft machen“ PR 1, Design-Thread Teil 1)_
 
 ## Ziel
 Private Recherche-Website für E-Commerce: Trend Spy, Ad Spy, Google Trends, Startup Spy, Future Radar, globale Suche, Dashboard und Watchlist, mit automatischer täglicher Recherche. Nur echte, nachvollziehbare Daten.
@@ -99,6 +99,11 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, Tailwind 4, Supabase (Auth + 
   - Shop Spy: Schnellfilter Meiste aktive / Stärkster Anstieg / Längste Laufzeit / Neu entdeckt, Filter automatisch/selbst/pausiert (`list-filters.ts`), Badge „automatisch entdeckt“, Spalte „längste“. Detail: Entdeckungsgrund, älteste bekannte Anzeige.
   - Datensammler: Karte „Datenquellen“ (`src/lib/collect/source-status.ts`, `src/components/collect/source-status.tsx`) inkl. Hinweis, wenn CRON_SECRET/Service-Role fehlen; Karten „Automatische Themen“ und „Shop-Entdeckung“.
   - Grenzen: Wortpaar-Erkennung ist eine Regel und liefert auch unpassende Paare; mit KI (PR 4) besser. Nicht im Browser geprüft (kein Supabase in der Sandbox).
+- Thread „Ganze Website im Minea-Stil neu gestalten“ (27.11.2026, Branch `claude/project-thread-w2av1w`). Auftrag Niklas: ganze Website nach Minea-Prinzipien, einheitliches Designsystem, Hover/Animationen dezent, Navigation wie Minea, Daten schnell erfassbar. Paralleler Thread „Recherche automatisch und verknüpft machen“ arbeitet in `src/lib/collect|shops|radar|trends`, Migrationen ab 0009 und den Seiten Shop Spy, Trend Spy, Startup Spy, Future Radar, Datensammler: diese Seiten erst nach Absprache umbauen.
+  - Teil 1 (PR, keine Migration): Tokens `surface-hover`, Schatten `shadow-card`/`shadow-card-hover`/`shadow-popover` (alle `shadow-xs` ersetzt), Animationen `animate-pop-in`/`animate-fade-in` in `globals.css`. `Card interactive`/`cardClass`, Buttons mit Active-State, neu `ui/table.tsx`, `ui/menu.tsx` (Dropdown), `StatTile` mit `icon`/`delta`, `PageHeader` im Stil von `BrowseHeader` (Symbol automatisch aus der Navigation). Hover auf Produktkarten/-zeilen (Bildzoom 1.03), Anzeigen-Karten, Shop-Zeilen, Tabellenzeilen.
+  - Navigation: Topbar entfernt. Sidebar weiss, breiter, einklappbar (Cookie `sidebar`), Suchknopf mit Schnellsuche ⌘K (`layout/command-palette.tsx`: Bereiche + „Überall suchen“ → `/suche`), Zähler ungelesener Inbox-Einträge, Kontomenü unten (Datensammler, Abmelden). Unter 1024 px: Kopfzeile mit Menü-Schublade statt horizontaler Leiste. Inhalt bis 1360 px breit.
+  - Design-Regeln in `CLAUDE.md` erweitert (Bewegung/Hover, neue Bausteine). Vorschau lokal mit Testseite geprüft (hell/dunkel/390 px), nicht mit echten Daten.
+  - Nächste PRs: Startseite/Dashboard mit Kennzahlen, Produkt-Detailseite und Rechner, Listen (News, Inbox, Suche, Favoriten) auf Table/interaktive Karten; die Spy-Seiten nach Absprache mit dem Recherche-Thread.
 
 ## Wunsch-Checkliste (Abgleich 27.11.2026)
 Vollständige Liste aller Wünsche von Niklas mit Status: `docs/wunsch-checkliste.md`. **Jeder Thread trägt neue Wünsche dort ein und prüft die Liste vor „fertig“.**

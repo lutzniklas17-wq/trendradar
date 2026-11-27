@@ -33,7 +33,7 @@ export function ShopRow({ shop: s }: { shop: ShopRowData }) {
   const url = domainUrl(s.domain);
   const points = sparklinePoints(s.series, 120, 32, 2);
   return (
-    <li className="grid gap-x-6 gap-y-3 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_120px_auto] sm:items-center">
+    <li className="grid gap-x-6 gap-y-3 px-5 py-4 transition-colors duration-150 hover:bg-surface-hover sm:grid-cols-[minmax(0,1fr)_120px_auto] sm:items-center">
       <div className="flex min-w-0 items-start gap-3">
         <Monogram name={s.name} />
         <div className="min-w-0">

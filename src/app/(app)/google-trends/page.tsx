@@ -77,12 +77,12 @@ export default async function GoogleTrendsPage({ searchParams }: PageProps<"/goo
               defaultValue={raw}
               required
               maxLength={600}
-              className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-xs`}
+              className={`${inputClass} h-12 rounded-xl pl-11 text-[15px] shadow-card`}
               placeholder={`Bis ${MAX_KEYWORDS} Begriffe mit Komma, z. B. „led maske, red light therapy“`}
             />
           </label>
-          <Select name="geo" aria-label="Region" options={geoOptions} defaultValue={geo} className="h-12 w-auto rounded-xl text-[13px] shadow-xs" />
-          <Select name="zeit" aria-label="Zeitraum" options={rangeOptions} defaultValue={timeRange} className="h-12 w-auto rounded-xl text-[13px] shadow-xs" />
+          <Select name="geo" aria-label="Region" options={geoOptions} defaultValue={geo} className="h-12 w-auto rounded-xl text-[13px] shadow-card" />
+          <Select name="zeit" aria-label="Zeitraum" options={rangeOptions} defaultValue={timeRange} className="h-12 w-auto rounded-xl text-[13px] shadow-card" />
           <SubmitButton pendingLabel="Wird abgefragt…" className="h-12 rounded-xl px-5">
             Abfragen
           </SubmitButton>
@@ -243,7 +243,7 @@ function RecentTrends({ items, configured }: { items: RecentTrend[]; configured:
               key={`${r.keywords.join(",")}|${r.geo}|${r.timeRange}`}
               href={trendsHref(r.keywords.join(", "), r.geo, r.timeRange)}
               title={r.fresh ? "Gespeichert, öffnen kostet nichts" : "Älter als 24 Stunden: öffnen fragt neu ab"}
-              className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs transition-colors duration-150 hover:bg-surface-muted"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-card transition-colors duration-150 hover:bg-surface-muted"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="min-w-0 truncate text-sm font-medium">{r.keywords.join(", ")}</span>

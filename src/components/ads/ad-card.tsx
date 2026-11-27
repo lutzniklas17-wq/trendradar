@@ -53,7 +53,7 @@ export function AdCard({ ad, canEmbed, rank }: { ad: AdCardData; canEmbed: boole
   const signals = adSignals(ad);
 
   return (
-    <article className="flex min-w-0 flex-col rounded-lg border border-border bg-surface shadow-xs">
+    <article className="flex min-w-0 flex-col rounded-lg border border-border bg-surface shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover">
       <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
         <Monogram name={ad.advertiser_name} />
         <div className="min-w-0 flex-1">
