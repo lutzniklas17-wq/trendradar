@@ -52,6 +52,13 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
   const withoutDomain = latest?.domains?.[""] ?? 0;
   const configured = getMetaEnv() !== null;
   const links = await loadShopLinks(supabase, shop.page_id);
+  // Älteste bekannte Anzeige dieses Werbetreibenden (in den eigenen, gesammelten Daten).
+  const { data: adv } = await supabase.from("advertisers").select("id").eq("platform", "meta").eq("external_id", shop.page_id).maybeSingle();
+  const { data: firstAd } = adv
+    ? await supabase.from("ads").select("started_at").eq("advertiser_id", adv.id).not("started_at", "is", null).order("started_at", { ascending: true }).limit(1).maybeSingle()
+    : { data: null };
+  const firstStart = (firstAd as { started_at: string } | null)?.started_at ?? null;
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" });
 
   return (
     <>
@@ -60,6 +67,13 @@ export default async function ShopPage({ params }: PageProps<"/shop-spy/[id]">) 
         <Link href="/shop-spy" className="text-accent hover:underline">
           ← Alle Shops
         </Link>
+      </p>
+      <p className="-mt-3 mb-6 text-[13px] text-muted">
+        {shop.origin === "auto"
+          ? `Automatisch entdeckt am ${fmtDate(shop.created_at)}${shop.discovered_reason ? `: ${shop.discovered_reason}` : "."}`
+          : `Selbst verfolgt seit ${fmtDate(shop.created_at)}.`}
+        {firstStart ? ` Älteste bekannte Anzeige gestartet am ${fmtDate(firstStart)} (in den gesammelten Daten).` : ""}
+        {shop.active === false ? " Wird nicht mehr täglich gezählt (dreimal keine aktiven Anzeigen). Mit „Shop verfolgen“ oder als Favorit wieder aktiv." : ""}
       </p>
 
       {shop.last_error ? (

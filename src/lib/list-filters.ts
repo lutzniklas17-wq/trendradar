@@ -109,16 +109,21 @@ export function categoryOptions(items: { category: string | null }[], label = "A
 
 export const SHOP_SIGNALS = [
   { value: "", label: "Alle Shops" },
+  { value: "auto", label: "Automatisch entdeckt" },
+  { value: "eigene", label: "Selbst verfolgt" },
   { value: "skaliert", label: "Signal: skaliert" },
   { value: "ruecklaeufig", label: "Stark rückläufig" },
   { value: "fehler", label: "Mit Fehler" },
   { value: "ungezaehlt", label: "Noch nicht gezählt" },
+  { value: "pausiert", label: "Pausiert" },
 ] as const;
 
 export const SHOP_SORTS = [
   { value: "", label: "Meiste Anzeigen" },
   { value: "veraenderung", label: "Grösste Zunahme" },
   { value: "neu", label: "Meiste neue Anzeigen" },
+  { value: "laufzeit", label: "Längste Laufzeit" },
+  { value: "entdeckt", label: "Zuletzt entdeckt" },
   { value: "name", label: "Name A–Z" },
 ] as const;
 
@@ -151,12 +156,24 @@ export type FilterableShop = {
   scaling: boolean;
   dropping: boolean;
   hasError: boolean;
+  /** 'auto' = automatisch entdeckt (ab Migration 0009), sonst selbst verfolgt. */
+  origin?: string | null;
+  /** Wird nicht mehr täglich gezählt. Pausierte Shops erscheinen nur mit dem Filter „Pausiert“. */
+  paused?: boolean;
+  longestDays?: number | null;
+  createdAt?: string | null;
 };
 
 export function filterShops<T extends FilterableShop>(shops: T[], f: ShopFilters): T[] {
   const out = shops.filter((s) => {
     if (!matchesText([s.name, s.domain], f.text)) return false;
+    if (f.signal === "pausiert") return Boolean(s.paused);
+    if (s.paused) return false;
     switch (f.signal) {
+      case "auto":
+        return s.origin === "auto";
+      case "eigene":
+        return s.origin !== "auto";
       case "skaliert":
         return s.scaling;
       case "ruecklaeufig":
@@ -178,6 +195,10 @@ export function filterShops<T extends FilterableShop>(shops: T[], f: ShopFilters
       return out.sort(desc((s) => s.delta));
     case "neu":
       return out.sort(desc((s) => s.newAds));
+    case "laufzeit":
+      return out.sort(desc((s) => s.longestDays ?? null));
+    case "entdeckt":
+      return out.sort(desc((s) => (s.createdAt ? Date.parse(s.createdAt) : null)));
     default:
       return out.sort(desc((s) => s.activeAds));
   }

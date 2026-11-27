@@ -28,7 +28,11 @@ type Row = {
   last_checked_at: string | null;
   last_error: string | null;
   favorite?: boolean;
-  shop_snapshots: { day: string; active_ads: number; capped: boolean; domains: Record<string, number> | null; new_ads: number | null }[];
+  origin?: string;
+  active?: boolean;
+  discovered_reason?: string | null;
+  created_at: string;
+  shop_snapshots: { day: string; active_ads: number; capped: boolean; domains: Record<string, number> | null; new_ads: number | null; longest_days: number | null }[];
 };
 
 export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy">) {
@@ -41,7 +45,7 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
   const since = dayDaysAgo(60);
   const { data, error } = await supabase
     .from("tracked_shops")
-    .select("*, shop_snapshots(day, active_ads, capped, domains, new_ads)") // * enthält favorite ab Migration 0006
+    .select("*, shop_snapshots(day, active_ads, capped, domains, new_ads, longest_days)") // * enthält favorite ab Migration 0006
     .gte("shop_snapshots.day", since)
     .order("name");
   const shops = ((data ?? []) as Row[]).map((s) => {
@@ -59,8 +63,12 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
       scaling: Boolean(trend?.scaling),
       dropping: Boolean(trend?.dropping),
       hasError: Boolean(s.last_error),
+      paused: s.active === false,
+      longestDays: latestRow?.longest_days ?? null,
+      createdAt: s.created_at,
     };
   });
+  const autoCount = shops.filter((s) => s.origin === "auto" && !s.paused).length;
   const visibleShops = filterShops(shops, filters);
 
   // Nach Domain gruppiert: mehrere Facebook-Seiten können auf denselben Shop verlinken.
@@ -75,15 +83,15 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
   }
   const domains = [...byDomain].sort((a, b) => b[1].ads - a[1].ads).slice(0, 15);
   const today = zurichDay();
-  const dueCount = shops.filter((s) => !s.last_checked_at || zurichDay(new Date(s.last_checked_at)) < today).length;
+  const dueCount = shops.filter((s) => !s.paused && (!s.last_checked_at || zurichDay(new Date(s.last_checked_at)) < today)).length;
 
   return (
     <>
       <BrowseHeader
         icon={Store}
         title="Shops"
-        accent="beobachten"
-        description="Wie viele Anzeigen ein Shop gerade schaltet und wie sich das entwickelt. Quelle: Meta Ad Library, nur EU."
+        accent="entdecken"
+        description="Shops, die das System selbst in den gesammelten Anzeigen findet, plus die Shops, die du verfolgst. Jeder wird täglich gezählt. Quelle: Meta Ad Library, nur EU."
       />
 
       {errorMessage ? <Notice>{errorMessage}</Notice> : null}
@@ -119,7 +127,7 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
         <div className="space-y-6">
           <Card>
             <CardHeader
-              title={`${shops.length} verfolgte Shops`}
+              title={`${shops.length - shops.filter((s) => s.paused).length} Shops, davon ${autoCount} automatisch entdeckt`}
               description="Aktive Anzeigen heute im Vergleich zum Stand vor mindestens 7 Tagen. Viele neue Anzeigen deuten auf Skalierung hin; das ist ein Signal, kein Beleg für Umsatz."
               action={
                 dueCount && configured ? (
@@ -146,6 +154,10 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
             />
             <QuickChips
               items={[
+                { label: "Meiste aktive Anzeigen", href: shopListHref(filters, { signal: "", sort: "" }), active: !filters.signal && !filters.sort },
+                { label: "Stärkster Anstieg", href: shopListHref(filters, { signal: "", sort: "veraenderung" }), active: !filters.signal && filters.sort === "veraenderung" },
+                { label: "Längste Laufzeit", href: shopListHref(filters, { signal: "", sort: "laufzeit" }), active: !filters.signal && filters.sort === "laufzeit" },
+                { label: "Neu entdeckt", href: shopListHref(filters, { signal: "auto", sort: "entdeckt" }), active: filters.signal === "auto" && filters.sort === "entdeckt" },
                 { label: "Skaliert gerade", href: shopListHref(filters, { signal: "skaliert", sort: "veraenderung" }), active: filters.signal === "skaliert" },
                 { label: "Meiste neue Anzeigen", href: shopListHref(filters, { signal: "", sort: "neu" }), active: !filters.signal && filters.sort === "neu" },
                 { label: "Stark rückläufig", href: shopListHref(filters, { signal: "ruecklaeufig", sort: "" }), active: filters.signal === "ruecklaeufig" },
@@ -167,6 +179,9 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
                       trend: s.trend,
                       newAds: s.newAds,
                       series: [...s.shop_snapshots].sort((x, y) => x.day.localeCompare(y.day)).map((x) => x.active_ads),
+                      origin: s.origin,
+                      reason: s.discovered_reason,
+                      longestDays: s.longestDays,
                     }}
                   />
                 ))}
@@ -201,9 +216,10 @@ export default async function ShopSpyPage({ searchParams }: PageProps<"/shop-spy
         </div>
       ) : !error ? (
         <Card>
-          <EmptyState icon={Store} title="Noch keine Shops verfolgt">
-            Füge oben einen Shop hinzu oder klicke im Ad Spy beim Werbetreibenden auf „Shop verfolgen“. Ab dann entsteht jeden Tag ein
-            Messpunkt; einen Verlauf siehst du nach ein paar Tagen.
+          <EmptyState icon={Store} title="Noch keine Shops">
+            {configured
+              ? "Das System nimmt jeden Morgen automatisch die aktivsten Shops aus den gesammelten Anzeigen auf. Die ersten erscheinen nach dem nächsten Anzeigen-Lauf. Du kannst oben auch selbst einen Shop hinzufügen."
+              : "Shops werden automatisch aus den gesammelten Meta-Anzeigen entdeckt. Dafür fehlt noch der META_ACCESS_TOKEN (siehe Datensammler → Datenquellen)."}
           </EmptyState>
         </Card>
       ) : null}
