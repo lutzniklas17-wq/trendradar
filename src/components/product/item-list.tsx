@@ -25,7 +25,7 @@ export function ItemList({ items, showArea = false }: { items: ItemListEntry[]; 
     <ul className="divide-y divide-border">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href={`/produkt/${item.id}`} className="group flex items-center justify-between gap-4 px-5 py-3 transition-colors duration-150 hover:bg-surface-muted/60">
+          <Link href={`/produkt/${item.id}`} className="group flex items-center justify-between gap-4 px-5 py-3 transition-colors duration-150 hover:bg-surface-hover">
             <div className="min-w-0">
               <p className="flex items-center gap-2 truncate text-sm font-medium">
                 {item.name}
@@ -38,7 +38,7 @@ export function ItemList({ items, showArea = false }: { items: ItemListEntry[]; 
                 {item.note ? <span className="truncate">„{item.note}“</span> : null}
               </p>
             </div>
-            <ChevronRight className="size-4 shrink-0 text-subtle transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
+            <ChevronRight className="size-4 shrink-0 text-subtle transition-[color,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-muted" aria-hidden />
           </Link>
         </li>
       ))}

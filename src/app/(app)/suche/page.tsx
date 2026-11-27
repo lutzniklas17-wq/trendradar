@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Form from "next/form";
 import { Search } from "lucide-react";
+import { BigSearchInput } from "@/components/ui/big-search";
+import { buttonClass } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -49,8 +52,14 @@ export default async function SearchPage({ searchParams }: PageProps<"/suche">) 
     <>
       <PageHeader
         title={query ? `Suche: ${query}` : "Suche"}
-        description="Durchsucht alle Entdeckungen, auch bei Tippfehlern. Suchinteresse und Anzeigen kommen mit den Datenquellen dazu."
+        description="Durchsucht alle Entdeckungen, auch bei Tippfehlern. Tipp: Mit Ctrl+K (Mac ⌘K) kommst du von jeder Seite hierher."
       />
+      <Form action="/suche" className="mb-6 flex flex-wrap gap-2">
+        <BigSearchInput name="q" label="Suchbegriff" defaultValue={query} required maxLength={200} placeholder="Produkt, Marke oder Kategorie, z. B. „Red Light Mask“" autoFocus={!query} />
+        <button type="submit" className={buttonClass("primary", "md", "h-12 rounded-xl px-5")}>
+          Suchen
+        </button>
+      </Form>
       <Card>
         {query && all.length ? (
           <FilterBar

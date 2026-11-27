@@ -85,13 +85,13 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
 
       {lead ? (
         <div className="space-y-6">
-          <Link href={`/news/${lead.id}`} className="group grid overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-colors duration-150 hover:border-border-strong md:grid-cols-2">
+          <Link href={`/news/${lead.id}`} className="group grid overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover md:grid-cols-2">
             <NewsImage src={lead.image_url} alt="" className="aspect-[16/9] w-full md:aspect-auto md:h-full" />
             <div className="flex flex-col justify-center gap-2 p-5">
               <p className="text-[13px] text-muted">
                 {lead.publisher} · {timeAgo(lead.date)}
               </p>
-              <h2 className="text-xl font-medium leading-snug group-hover:text-accent">{lead.title}</h2>
+              <h2 className="text-xl font-semibold leading-snug tracking-tight transition-colors duration-150 group-hover:text-accent">{lead.title}</h2>
               {lead.excerpt ? <p className="line-clamp-3 text-sm text-muted">{lead.excerpt}</p> : null}
             </div>
           </Link>
@@ -100,13 +100,13 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/news/${a.id}`} className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-colors duration-150 hover:border-border-strong">
+                  <Link href={`/news/${a.id}`} className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-card-hover">
                     <NewsImage src={a.image_url} alt="" className="aspect-[16/9] w-full" />
                     <div className="flex flex-1 flex-col gap-1.5 p-4">
                       <p className="text-xs text-muted">
                         {a.publisher} · {timeAgo(a.date)}
                       </p>
-                      <h3 className="line-clamp-3 text-sm font-medium leading-snug group-hover:text-accent">{a.title}</h3>
+                      <h3 className="line-clamp-3 text-sm font-medium leading-snug transition-colors duration-150 group-hover:text-accent">{a.title}</h3>
                     </div>
                   </Link>
                 </li>
@@ -158,7 +158,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
         {feeds.length ? (
           <ul className="divide-y divide-border border-t border-border">
             {feeds.map((f) => (
-              <li key={f.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+              <li key={f.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm transition-colors duration-150 hover:bg-surface-hover">
                 <div className="min-w-0">
                   <p className="font-medium">{f.name}</p>
                   <p className="text-xs text-muted">

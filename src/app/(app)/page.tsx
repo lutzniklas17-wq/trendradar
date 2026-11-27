@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { Database, ExternalLink, Megaphone, Package, Store } from "lucide-react";
+import { Database, ExternalLink, Megaphone, Package, Store, Trophy } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { WhatsNew } from "@/components/home/whats-new";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonClass } from "@/components/ui/button";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Segmented } from "@/components/ui/segmented";
+import { Table, THead, Th, Td, Tr } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProductRow } from "@/components/library/product-row";
 import { AdCard, AdGrid, Monogram } from "@/components/ads/ad-card";
@@ -49,13 +53,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
       <WhatsNew />
 
-      <section aria-labelledby="top10" className="mb-8">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="top10" className="text-sm font-medium">
-            Top 10 des Tages
-          </h2>
-          <p className="text-[13px] text-muted">{TAB_TEXT[tab]}</p>
-        </div>
+      <section aria-labelledby="top10" className="mb-6">
+        <SectionHeader id="top10" icon={Trophy} title="Top 10 des Tages" description="Tag wählen, dann Anzeigen, Shops oder Produkte ansehen." />
         <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
           {[...covers].reverse().map((c) => {
             const active = c.day === day;
@@ -65,12 +64,12 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 href={homeHref(c.day, tab, today)}
                 aria-current={active ? "date" : undefined}
                 className={cn(
-                  "flex h-28 w-28 shrink-0 snap-start flex-col justify-between rounded-lg border p-3 transition-colors duration-150",
-                  active ? "border-accent bg-accent-soft" : "border-border bg-surface shadow-card hover:border-border-strong",
+                  "flex h-28 w-28 shrink-0 snap-start flex-col justify-between rounded-lg border p-3 transition-[border-color,box-shadow,background-color] duration-150",
+                  active ? "border-accent bg-accent-soft ring-1 ring-accent/30" : "border-border bg-surface shadow-card hover:border-border-strong hover:shadow-card-hover",
                 )}
               >
                 <span className={cn("text-[12px]", active ? "text-accent" : "text-muted")}>{c.day === today ? "Heute" : weekdayShort(c.day)}</span>
-                <span className="text-xl tabular-nums">{c.day.slice(8, 10)}.</span>
+                <span className="text-2xl font-semibold tracking-tight tabular-nums">{c.day.slice(8, 10)}.</span>
                 <span className="truncate text-[11px] text-muted" title={c.topAdvertiser ?? undefined}>
                   {c.ads ? `${c.ads.toLocaleString("de-CH")} Anzeigen` : "keine Daten"}
                 </span>
@@ -80,21 +79,10 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         </div>
       </section>
 
-      <nav className="mb-5 flex gap-2" aria-label="Bereich">
-        {HOME_TABS.map((t) => (
-          <Link
-            key={t.value}
-            href={homeHref(day, t.value, today)}
-            aria-current={tab === t.value ? "page" : undefined}
-            className={cn(
-              "inline-flex h-8 items-center rounded-md border px-3 text-[13px] transition-colors duration-150",
-              tab === t.value ? "border-accent/30 bg-accent-soft font-medium text-accent" : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <Segmented label="Bereich" active={tab} items={HOME_TABS.map((t) => ({ value: t.value, label: t.label, href: homeHref(day, t.value, today) }))} />
+        <p className="text-[13px] text-muted">{TAB_TEXT[tab]}</p>
+      </div>
 
       <div className="mb-10">
         {tab === "anzeigen" ? <AdsTab day={day} canEmbed={canEmbed} /> : tab === "shops" ? <ShopsTab day={day} /> : <ProductsTab day={day} />}
@@ -107,14 +95,29 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             {sourcesRes.error ? "Die Datenbank ist noch nicht vorbereitet (Migration ausführen, siehe README)." : null}
           </EmptyState>
         ) : (
-          <ul className="divide-y divide-border">
-            {(sourcesRes.data as SourceRow[]).map((s) => (
-              <li key={s.id} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">
-                <span>{s.name}</span>
-                {s.last_success_at ? <span className="text-muted tabular-nums">{dateTime.format(new Date(s.last_success_at))}</span> : <Badge>noch nie</Badge>}
-              </li>
-            ))}
-          </ul>
+          <Table>
+            <THead>
+              <tr>
+                <Th>Quelle</Th>
+                <Th className="text-right">Zuletzt erfolgreich</Th>
+              </tr>
+            </THead>
+            <tbody>
+              {(sourcesRes.data as SourceRow[]).map((s) => (
+                <Tr key={s.id}>
+                  <Td>
+                    <span className="inline-flex items-center gap-2">
+                      <span className={cn("size-1.5 rounded-full", s.last_success_at ? "bg-positive" : "bg-subtle")} aria-hidden />
+                      {s.name}
+                    </span>
+                  </Td>
+                  <Td className="text-right">
+                    {s.last_success_at ? <span className="text-muted tabular-nums">{dateTime.format(new Date(s.last_success_at))}</span> : <Badge>noch nie</Badge>}
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
         )}
       </Card>
     </>
@@ -144,8 +147,8 @@ async function AdsTab({ day, canEmbed }: { day: string; canEmbed: boolean }) {
           <AdCard key={ad.id} ad={ad} canEmbed={canEmbed} rank={i + 1} />
         ))}
       </AdGrid>
-      <Link href="/ad-spy/rangliste?ansicht=anzeigen&sortierung=reach" className="mt-4 inline-block text-[13px] text-accent hover:underline">
-        Alle Anzeigen ansehen →
+      <Link href="/ad-spy/rangliste?ansicht=anzeigen&sortierung=reach" className={buttonClass("secondary", "sm", "mt-4")}>
+        Alle Anzeigen ansehen
       </Link>
     </>
   );
@@ -183,7 +186,7 @@ async function ShopsTab({ day }: { day: string }) {
             .sort((a, b) => b[1] - a[1])[0]?.[0];
           const url = domainUrl(domain ?? null);
           return (
-            <li key={shop?.id ?? i} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 text-sm">
+            <li key={shop?.id ?? i} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 text-sm transition-colors duration-150 hover:bg-surface-hover">
               <span className="w-5 text-[12px] text-subtle tabular-nums">{i + 1}</span>
               <Monogram name={shop?.name ?? null} />
               <div className="min-w-0 flex-1">
@@ -254,7 +257,7 @@ async function ProductsTab({ day }: { day: string }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <span className="w-20 text-right">
-      <span className="block text-sm tabular-nums">{value}</span>
+      <span className="block text-sm font-medium tabular-nums">{value}</span>
       <span className="block text-[11px] text-muted">{label}</span>
     </span>
   );
