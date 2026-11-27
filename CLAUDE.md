@@ -4,6 +4,7 @@
 
 ## Kontext sparen (Context Compactor)
 
+- **Wunsch-Checkliste:** Jeden neuen Wunsch von Niklas sofort in `docs/wunsch-checkliste.md` eintragen (✅/🟡/❌/⛔). Vor jedem „fertig“ die Liste prüfen, damit nichts vergessen geht.
 - **STAND.md zuerst:** Zu Beginn jedes Threads `STAND.md` als Erstes lesen. Nach jeder fertigen Teilaufgabe aktualisieren: Ziel, Entscheidungen, geänderte Dateien, offene Probleme, nächster Schritt.
 - **Sparsam lesen:** Erst suchen (grep/glob), dann nur die relevanten Zeilen lesen. Logs und Befehlsausgaben filtern (`tail`, `grep`). Nie `node_modules`, Lockfiles (`package-lock.json`) oder Build-Ordner (`.next`) lesen.
 - **Langer Thread:** `STAND.md` aktualisieren und dem Nutzer sagen, dass er einen neuen Thread starten soll. Kein `/compact`.
